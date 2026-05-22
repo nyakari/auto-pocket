@@ -1,0 +1,30 @@
+{
+  "name": "auto-pocket",
+  "version": "0.1.0",
+  "description": "OCR-based window automation library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "example": "npx tsx examples/rules.ts",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "ocr",
+    "screenshot",
+    "automation",
+    "windows"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "^4.2.6",
+    "node-screenshots": "^0.2.8",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}
