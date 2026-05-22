@@ -1,5 +1,9 @@
 node_modules/
-dist/
+/dist/
+/dist-electron/
+/dist-renderer/
+/src/dist/
+/release/
 *.js.map
 .DS_Store
 Thumbs.db
