@@ -1,6 +1,6 @@
 {
     "name": "auto-pocket",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "OCR-based window automation library",
     "keywords": [
         "automation",
@@ -13,6 +13,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "make-ico": "node scripts/make-ico.mjs build/icon.png build/icon.ico",
         "build": "pnpm build:lib && pnpm build:electron",
         "build:lib": "tsc -p tsconfig.json",
         "build:electron": "tsc -p electron/tsconfig.json",
@@ -20,7 +21,8 @@
         "dev": "pnpm build:lib && concurrently --kill-others \"pnpm dev:renderer\" \"pnpm dev:electron\"",
         "dev:renderer": "cd src && pnpm vp dev --port 5173",
         "dev:electron": "wait-on http://localhost:5173 && pnpm exec electron dist-electron/main.js --dev",
-        "build:app": "pnpm build && pnpm build:renderer && electron-builder --win portable",
+        "build:app": "pnpm build && pnpm build:renderer && node scripts/copy-native.mjs && electron-builder --win portable",
+        "copy:native": "node scripts/copy-native.mjs",
         "example": "npx tsx examples/rules.ts",
         "watch": "tsc --watch",
         "prepare": "vp config"
@@ -36,11 +38,13 @@
         "node-windows-ocr": "^1.1.1"
     },
     "devDependencies": {
+        "@electron/rebuild": "^3.7.1",
         "@types/node": "^25.9.1",
         "@vitejs/plugin-vue": "^6.0.7",
         "concurrently": "^9.2.1",
         "electron": "^42.2.0",
         "electron-builder": "^26.8.1",
+        "sharp": "^0.34.5",
         "tsx": "^4.22.3",
         "typescript": "^6.0.3",
         "vite": "catalog:",
@@ -52,18 +56,24 @@
     "build": {
         "appId": "com.autopocket.app",
         "productName": "Auto Pocket",
+        "icon": "build/icon.ico",
         "files": [
             "dist/**/*",
             "dist-electron/**/*",
-            "src/dist/**/*"
+            "src/dist/**/*",
+            "node_modules/node-screenshots/**/*",
+            "node_modules/node-windows-ocr/**/*",
+            "node_modules/@nut-tree-fork/**/*"
         ],
         "directories": {
             "output": "release"
         },
         "win": {
+            "icon": "build/icon.ico",
             "target": [
                 "portable"
             ]
-        }
+        },
+        "npmRebuild": false
     }
 }

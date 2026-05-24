@@ -1,6 +1,8 @@
 allowBuilds:
     electron-winstaller: true
     esbuild: true
+    '@electron/rebuild': true
+    sharp: true
 catalog:
     vite: npm:@voidzero-dev/vite-plus-core@latest
     vitest: npm:@voidzero-dev/vite-plus-test@latest
@@ -8,6 +10,7 @@ catalog:
 overrides:
     vite: 'catalog:'
     vitest: 'catalog:'
+    '@electron/node-gyp': 10.2.0-electron.2
 peerDependencyRules:
     allowAny:
         - vite
