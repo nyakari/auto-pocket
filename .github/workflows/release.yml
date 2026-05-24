@@ -1,0 +1,48 @@
+name: Release
+
+on:
+    push:
+        branches: [main]
+
+jobs:
+    release:
+        runs-on: windows-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.2.2
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - run: pnpm build:app
+
+            - name: Get version
+              shell: pwsh
+              run: |
+                  $json = Get-Content -Raw package.json | ConvertFrom-Json
+                  "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
+                  "TAG=v$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Auto-Pocket-${{ env.VERSION }}
+                  path: release/*.exe
+
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ env.TAG }}
+                  name: Auto Pocket ${{ env.VERSION }}
+                  files: release/*.exe
+                  draft: false
+                  prerelease: false
+                  generate_release_notes: true
