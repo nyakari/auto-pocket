@@ -1,6 +1,6 @@
 {
     "name": "auto-pocket",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "OCR-based window automation library",
     "keywords": [
         "automation",
