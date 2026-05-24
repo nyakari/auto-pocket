@@ -10,7 +10,7 @@ interface Api {
     listWindows: () => Promise<any[]>
     captureWindow: (handle: number) => Promise<{ image: string; window: any }>
     ocrImage: (base64: string) => Promise<any>
-    ocrImageWithLang: (base64: string, lang: string, scale?: number) => Promise<any>
+    ocrImageWithLang: (base64: string, lang: string) => Promise<any>
     clickAt: (x: number, y: number, button?: string) => Promise<void>
     typeText: (text: string) => Promise<void>
     saveConfig: (config: any) => Promise<void>

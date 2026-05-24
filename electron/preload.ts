@@ -4,8 +4,8 @@ contextBridge.exposeInMainWorld('api', {
     listWindows: () => ipcRenderer.invoke('list-windows'),
     captureWindow: (handle: number) => ipcRenderer.invoke('capture-window', handle),
     ocrImage: (base64: string) => ipcRenderer.invoke('ocr-image', base64),
-    ocrImageWithLang: (base64: string, lang: string, scale?: number) =>
-        ipcRenderer.invoke('ocr-image-with-lang', base64, lang, scale),
+    ocrImageWithLang: (base64: string, lang: string) =>
+        ipcRenderer.invoke('ocr-image-with-lang', base64, lang),
     clickAt: (x: number, y: number, button?: string) =>
         ipcRenderer.invoke('click-at', x, y, button),
     typeText: (text: string) => ipcRenderer.invoke('type-text', text),

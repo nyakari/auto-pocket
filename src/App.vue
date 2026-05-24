@@ -184,17 +184,6 @@
                     </section>
 
                     <section class="form-group">
-                        <label>OCR Scale (Accuracy multiplier)</label>
-                        <div class="select-wrapper">
-                            <select v-model.number="ocrScale" class="custom-select">
-                                <option :value="1">1x (Fastest)</option>
-                                <option :value="2">2x (Balanced)</option>
-                                <option :value="3">3x (Most Accurate)</option>
-                            </select>
-                        </div>
-                    </section>
-
-                    <section class="form-group">
                         <label>Automation Mode</label>
                         <div class="toggle-group">
                             <button
@@ -263,7 +252,6 @@
     const settingsModalOpen = ref(false)
     const pollInterval = ref(2000)
     const ocrLang = ref('en-US')
-    const ocrScale = ref(1)
     const defaultWaitMs = ref(0.5)
     const useScrcpy = ref(false)
     const adbPath = ref('adb')
@@ -316,7 +304,6 @@
                 targetWindowTitle: win ? win.title : existing.targetWindowTitle,
                 pollInterval: pollInterval.value,
                 ocrLang: ocrLang.value,
-                ocrScale: ocrScale.value,
                 defaultWaitMs: defaultWaitMs.value * 1000, // Convert to ms
                 useScrcpy: useScrcpy.value,
                 adbPath: adbPath.value,
@@ -356,7 +343,6 @@
         const config = await window.api.loadConfig()
         pollInterval.value = config.pollInterval || 2000
         ocrLang.value = config.ocrLang || 'en-US'
-        ocrScale.value = config.ocrScale || 1
         defaultWaitMs.value =
             config.defaultWaitMs > 60 ? config.defaultWaitMs / 1000 : config.defaultWaitMs || 0.5
         useScrcpy.value = config.useScrcpy ?? false

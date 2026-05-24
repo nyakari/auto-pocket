@@ -50,11 +50,7 @@
         const config = await window.api.loadConfig()
         try {
             const result = await window.api.captureWindow(props.selectedHandle)
-            const ocr = await window.api.ocrImageWithLang(
-                result.image,
-                config.ocrLang || 'en-US',
-                config.ocrScale || 1,
-            )
+            const ocr = await window.api.ocrImageWithLang(result.image, config.ocrLang || 'en-US')
             updateCapture({ image: result.image, windowTitle: target.title, ocr })
             emit('log', 'info', `Captured "${target.title}" – ${ocr.lines.length} lines`)
         } catch (e: any) {

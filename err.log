@@ -1,0 +1,2 @@
+(node:28340) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `Auto Pocket --trace-deprecation ...` to show where the warning was created)

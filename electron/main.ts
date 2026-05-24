@@ -1,6 +1,14 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
+
+process.on('uncaughtException', (error) => {
+    console.error('UNCAUGHT EXCEPTION:', error)
+})
+process.on('unhandledRejection', (reason) => {
+    console.error('UNHANDLED REJECTION:', reason)
+})
+
 import { execSync, exec, execFileSync } from 'child_process'
 import {
     listWindows,
@@ -166,7 +174,6 @@ function loadConfig(): SavedConfig {
             targetWindowTitle: c.targetWindowTitle || '',
             pollInterval: c.pollInterval || 2000,
             ocrLang: c.ocrLang || 'en-US',
-            ocrScale: c.ocrScale || 1,
             rules: c.rules || [],
             workflows: c.workflows || [],
             defaultWaitMs: c.defaultWaitMs || 500,
@@ -179,7 +186,6 @@ function loadConfig(): SavedConfig {
             targetWindowTitle: '',
             pollInterval: 2000,
             ocrLang: 'en-US',
-            ocrScale: 1,
             rules: [],
             workflows: [],
             defaultWaitMs: 500,
@@ -260,7 +266,6 @@ async function pollCycle(config: SavedConfig): Promise<void> {
         const capture = await captureWindow(wins[0].id)
         const ocr = await ocrImage(capture.image, {
             lang: config.ocrLang || 'en-US',
-            scale: config.ocrScale || 1,
         })
 
         const b64 = capture.image.toString('base64')
@@ -722,7 +727,6 @@ async function runWorkflow(
                         const capture = await captureWindow(wins[0].id)
                         const ocr = await ocrImage(capture.image, {
                             lang: config.ocrLang || 'en-US',
-                            scale: config.ocrScale || 1,
                         })
                         const matched = matchBlocks(ocr.blocks, step.when, false, step.useRegex)
                         const count = matched.length
@@ -752,7 +756,6 @@ async function runWorkflow(
                         const capture = await captureWindow(wins[0].id)
                         const ocr = await ocrImage(capture.image, {
                             lang: config.ocrLang || 'en-US',
-                            scale: config.ocrScale || 1,
                         })
                         const matched = matchBlocks(
                             ocr.blocks,
@@ -1150,7 +1153,6 @@ async function findTextOnScreen(
     const capture = await captureWindow(wins[0].id)
     const ocr = await ocrImage(capture.image, {
         lang: config.ocrLang || 'en-US',
-        scale: config.ocrScale || 1,
     })
 
     const matched = matchBlocks(ocr.blocks, pattern, wholeWord, useRegex)
@@ -1273,12 +1275,9 @@ void app.whenReady().then(() => {
         return ocrImage(Buffer.from(base64, 'base64'))
     })
 
-    ipcMain.handle(
-        'ocr-image-with-lang',
-        async (_e, base64: string, lang: string, scale: number = 1) => {
-            return ocrImage(Buffer.from(base64, 'base64'), { lang, scale })
-        },
-    )
+    ipcMain.handle('ocr-image-with-lang', async (_e, base64: string, lang: string) => {
+        return ocrImage(Buffer.from(base64, 'base64'), { lang })
+    })
 
     ipcMain.handle('click-at', async (_e, x: number, y: number, button?: string) => {
         await clickAt(x, y, (button as any) || 'left')

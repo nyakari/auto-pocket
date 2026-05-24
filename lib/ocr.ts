@@ -2,7 +2,6 @@ import { writeFile, unlink } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
-import { Jimp } from 'jimp'
 import { recognizeBatchFromPath } from 'node-windows-ocr'
 import type { OCRResult } from 'node-windows-ocr'
 import type { OcrResult, OcrOptions, WordBlock, LineBlock } from './types'
@@ -20,24 +19,15 @@ function normalizeLang(lang: string): string {
     return TESSERACT_TO_BCP47[lang] || lang
 }
 
-async function scaleImage(image: Buffer, scale: number): Promise<Buffer> {
-    if (scale <= 1) return image
-    const img = await Jimp.read(image)
-    img.resize({ w: img.bitmap.width * scale, h: img.bitmap.height * scale })
-    return img.getBuffer('image/png')
-}
-
 function toBBox(r: OCRResult['Result']['Lines'][0]['Words'][0]['BoundingRect']) {
     return { x0: r.Left, y0: r.Top, x1: r.Right, y1: r.Bottom }
 }
 
 export async function ocrImage(image: Buffer, options?: OcrOptions): Promise<OcrResult> {
-    const scale = options?.scale || 1
     const lang = normalizeLang(options?.lang || 'en-US')
-    const scaled = await scaleImage(image, scale)
 
     const tmpFile = join(tmpdir(), `auto-pocket-ocr-${randomUUID()}.png`)
-    await writeFile(tmpFile, scaled)
+    await writeFile(tmpFile, image)
 
     try {
         const [raw] = await recognizeBatchFromPath([tmpFile], { language: lang })

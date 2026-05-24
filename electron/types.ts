@@ -2,7 +2,6 @@ export interface SavedConfig {
     targetWindowTitle: string
     pollInterval: number
     ocrLang: string
-    ocrScale: number
     rules: SavedRule[]
     workflows: Workflow[]
     defaultWaitMs: number
