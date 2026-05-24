@@ -60,7 +60,17 @@ contextBridge.exposeInMainWorld('api', {
 
     selectAdb: () => ipcRenderer.invoke('select-adb'),
 
+    onWindowMaximized: (cb: (maximized: boolean) => void) => {
+        const handler = (_e: any, val: boolean) => cb(val)
+        ipcRenderer.on('window:maximized', handler)
+        return () => ipcRenderer.removeListener('window:maximized', handler)
+    },
+
     clearPersistentVars: () => ipcRenderer.invoke('clear-persistent-vars'),
     resizeWindow: (handle: number, width: number, height: number) =>
         ipcRenderer.invoke('resize-window', handle, width, height),
+
+    minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+    maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
+    closeWindow: () => ipcRenderer.invoke('close-window'),
 })

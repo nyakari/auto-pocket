@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { execSync, exec, execFileSync } from 'child_process'
@@ -204,11 +204,13 @@ function send(channel: string, data: any) {
 }
 
 function createWindow(): void {
+    Menu.setApplicationMenu(null)
     mainWindow = new BrowserWindow({
         width: 1100,
         height: 800,
         minWidth: 800,
         minHeight: 600,
+        frame: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
@@ -226,6 +228,14 @@ function createWindow(): void {
 
     mainWindow.on('closed', () => {
         mainWindow = null
+    })
+
+    mainWindow.on('maximize', () => {
+        mainWindow?.webContents.send('window:maximized', true)
+    })
+
+    mainWindow.on('unmaximize', () => {
+        mainWindow?.webContents.send('window:maximized', false)
     })
 }
 
@@ -1392,6 +1402,22 @@ $logicalOuterH = [Math]::Round((${height} / $scale) + $padH_logical)
             properties: ['openFile'],
         })
         return result.canceled ? null : result.filePaths[0]
+    })
+
+    ipcMain.handle('minimize-window', () => {
+        mainWindow?.minimize()
+    })
+
+    ipcMain.handle('maximize-window', () => {
+        if (mainWindow?.isMaximized()) {
+            mainWindow.unmaximize()
+        } else {
+            mainWindow?.maximize()
+        }
+    })
+
+    ipcMain.handle('close-window', () => {
+        mainWindow?.close()
     })
 
     app.on('activate', () => {

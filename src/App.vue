@@ -54,19 +54,85 @@
                 </button>
             </div>
 
-            <div class="status-badge" :class="{ running: watcherRunning }">
-                <span class="status-dot"></span>
-                <span class="status-text">{{ watcherRunning ? 'Watcher ON' : 'Watcher OFF' }}</span>
-            </div>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
+                <div class="watcher-badge" v-if="watcherRunning">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Watcher ON</span>
+                </div>
 
-            <!-- Global Settings Button in Header -->
-            <button
-                class="btn btn-secondary btn-settings"
-                @click="settingsModalOpen = true"
-                title="Settings"
-            >
-                ⚙️ Settings
-            </button>
+                <!-- Global Settings Button in Header -->
+                <button
+                    class="btn btn-secondary btn-settings"
+                    @click="settingsModalOpen = true"
+                    title="Settings"
+                >
+                    ⚙️ Settings
+                </button>
+
+                <div class="window-controls">
+                    <button class="win-btn win-minimize" @click="minimizeWindow" title="Minimize">
+                        <svg width="12" height="12" viewBox="0 0 12 12">
+                            <rect x="1" y="5.5" width="10" height="1" fill="currentColor" />
+                        </svg>
+                    </button>
+                    <button class="win-btn win-maximize" @click="maximizeWindow" title="Maximize">
+                        <svg v-if="!isMaximized" width="12" height="12" viewBox="0 0 12 12">
+                            <rect
+                                x="1.5"
+                                y="1.5"
+                                width="9"
+                                height="9"
+                                rx="1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1"
+                            />
+                        </svg>
+                        <svg v-else width="12" height="12" viewBox="0 0 12 12">
+                            <rect
+                                x="3"
+                                y="0.5"
+                                width="8"
+                                height="8"
+                                rx="1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1"
+                            />
+                            <rect
+                                x="0.5"
+                                y="3"
+                                width="8"
+                                height="8"
+                                rx="1"
+                                fill="var(--bg-main)"
+                                stroke="currentColor"
+                                stroke-width="1"
+                            />
+                        </svg>
+                    </button>
+                    <button class="win-btn win-close" @click="closeWindow" title="Close">
+                        <svg width="12" height="12" viewBox="0 0 12 12">
+                            <line
+                                x1="2"
+                                y1="2"
+                                x2="10"
+                                y2="10"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                            />
+                            <line
+                                x1="10"
+                                y1="2"
+                                x2="2"
+                                y2="10"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </header>
 
         <div class="body">
@@ -201,6 +267,7 @@
     const defaultWaitMs = ref(0.5)
     const useScrcpy = ref(false)
     const adbPath = ref('adb')
+    const isMaximized = ref(false)
 
     watch(selectedHandle, async (val) => {
         if (val === null) return
@@ -263,6 +330,18 @@
         }
     }
 
+    async function minimizeWindow() {
+        await window.api.minimizeWindow()
+    }
+
+    async function maximizeWindow() {
+        await window.api.maximizeWindow()
+    }
+
+    async function closeWindow() {
+        await window.api.closeWindow()
+    }
+
     function addLog(level: string, msg: string) {
         const time = new Date().toLocaleTimeString()
         logLines.value.push({ time, level, msg })
@@ -291,6 +370,9 @@
             window.api.onWatcherMatch((data) =>
                 addLog('match', `[${data.ruleName}] "${data.matchedText}"`),
             ),
+            window.api.onWindowMaximized((maximized) => {
+                isMaximized.value = maximized
+            }),
         )
     })
 
@@ -471,47 +553,71 @@
         line-height: 1;
     }
 
-    .status-badge {
+    .watcher-badge {
         margin-left: auto;
         font-size: 12px;
         font-weight: 600;
         padding: 6px 14px;
         border-radius: var(--radius-full);
         background: var(--bg-card);
-        border: 1px solid var(--border-color);
+        border: 1px solid rgba(16, 185, 129, 0.3);
         display: flex;
         align-items: center;
         gap: 8px;
         -webkit-app-region: no-drag;
-        box-shadow: var(--shadow-glow);
-    }
-
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        background: var(--color-danger);
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 8px var(--color-danger);
-    }
-
-    .status-badge.running {
-        border-color: rgba(16, 185, 129, 0.3);
         box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
     }
 
-    .status-badge.running .status-dot {
+    .watcher-badge .status-dot {
+        width: 8px;
+        height: 8px;
         background: var(--color-success);
+        border-radius: 50%;
+        display: inline-block;
         box-shadow: 0 0 10px var(--color-success);
         animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
-    .status-badge.running .status-text {
+    .watcher-badge .status-text {
         color: var(--color-success);
     }
 
     .btn-settings {
         -webkit-app-region: no-drag;
+    }
+
+    .window-controls {
+        display: flex;
+        align-items: center;
+        -webkit-app-region: no-drag;
+        margin-left: 8px;
+    }
+
+    .win-btn {
+        width: 46px;
+        height: 34px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 8px;
+        overflow: hidden;
+        transition:
+            background var(--transition-fast),
+            color var(--transition-fast);
+    }
+
+    .win-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-primary);
+    }
+
+    .win-close:hover {
+        background: #e81123;
+        color: white;
     }
 
     .body {
