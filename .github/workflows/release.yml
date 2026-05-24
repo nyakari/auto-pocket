@@ -4,6 +4,9 @@ on:
     push:
         branches: [main]
 
+permissions:
+    contents: write
+
 jobs:
     release:
         runs-on: windows-latest
@@ -45,4 +48,3 @@ jobs:
                   files: release/*.exe
                   draft: false
                   prerelease: false
-                  generate_release_notes: true
