@@ -7,4 +7,4 @@ My current use case for this is to through all TCGP solo battles for every expan
 Can be adapted to basically control anything though
 
 - windows only (uses windows built-in ocr)
-- can interact with scrcpy windows
+- can interact with the adb interface (tap/swipe gestures) for android devices
