@@ -57,16 +57,15 @@
     }
     .log-line {
         padding: 2px 0;
-        border-bottom: 1px solid #111;
         display: flex;
         gap: 8px;
     }
     .log-line .t {
-        color: #666;
+        color: #4b5563;
         white-space: nowrap;
     }
     .log-line .m {
-        color: #ccc;
+        color: #d1d5db;
         white-space: nowrap;
     }
     .log-line.err .m {
@@ -79,7 +78,7 @@
         color: #ffa726;
     }
     .empty {
-        color: #444;
+        color: #333;
         padding: 12px;
         text-align: center;
     }

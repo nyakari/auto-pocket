@@ -94,17 +94,20 @@
     .section-header label {
         margin: 0;
         font-size: 12px;
-        color: #aaa;
+        color: #9ca3af;
         margin-bottom: 4px;
     }
     button.small {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 3px 10px;
         border-radius: 3px;
         cursor: pointer;
         font-size: 11px;
+    }
+    button.small:hover {
+        border-color: #404040;
     }
     .mode-toggle {
         display: flex;
@@ -116,17 +119,17 @@
         align-items: center;
         gap: 4px;
         font-size: 12px;
-        color: #888;
+        color: #6b7280;
         cursor: pointer;
         padding: 4px 10px;
-        border: 1px solid #0f3460;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
-        background: #16213e;
+        background: #141414;
     }
     .toggle-label.active {
-        color: #e0e0e0;
+        color: #ececec;
         border-color: #e94560;
-        background: #1a1a3e;
+        background: #1a1a1a;
     }
     .toggle-label input {
         display: none;
@@ -142,7 +145,7 @@
     .adb-config label {
         display: block;
         font-size: 12px;
-        color: #aaa;
+        color: #9ca3af;
         margin-bottom: 4px;
     }
     .adb-row {
@@ -153,9 +156,9 @@
         flex: 1;
         font-size: 11px;
         padding: 3px 6px;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 3px;
     }
     .adb-row input:disabled {

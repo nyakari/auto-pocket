@@ -262,12 +262,17 @@
         position: relative;
     }
     .step-card {
-        background: #16213e;
-        border: 1px solid #0f3460;
+        background: #141414;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         margin-bottom: 6px;
         cursor: pointer;
-        transition: opacity 0.15s ease;
+        transition:
+            opacity 0.15s ease,
+            border-color 0.15s ease;
+    }
+    .step-card:hover {
+        border-color: #404040;
     }
     .step-card.active {
         border-color: #e94560;
@@ -300,19 +305,19 @@
         cursor: grabbing;
     }
     .grip {
-        color: #666;
+        color: #4b5563;
         font-size: 12px;
         line-height: 1;
         letter-spacing: -1px;
     }
     .drag-handle:hover .grip {
-        color: #aaa;
+        color: #9ca3af;
     }
     .step-num {
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        background: #0f3460;
+        background: #1e1e1e;
         color: #e94560;
         display: flex;
         align-items: center;
@@ -324,9 +329,9 @@
         flex: 0 0 110px;
         font-size: 11px;
         padding: 2px 4px;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 3px;
     }
     .step-header select:disabled {
@@ -337,24 +342,32 @@
         font-size: 12px;
         padding: 2px 6px;
         background: transparent;
-        color: #e0e0e0;
+        color: #ececec;
         border: 1px solid transparent;
         border-radius: 3px;
     }
     .step-name:focus {
-        border-color: #0f3460;
+        border-color: #404040;
     }
     .step-name:disabled {
         opacity: 0.5;
     }
     button.small {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
-        padding: 3px 10px;
+        background: transparent;
+        color: #6b7280;
+        border: 1px solid transparent;
+        padding: 3px 6px;
         border-radius: 3px;
         cursor: pointer;
         font-size: 11px;
+        transition:
+            color 0.15s ease,
+            border-color 0.15s ease;
+    }
+    button.small:hover {
+        color: #ececec;
+        border-color: #2a2a2a;
+        background: #1e1e1e;
     }
     button.small:disabled {
         opacity: 0.5;
@@ -362,15 +375,25 @@
     button.danger {
         color: #ef5350;
     }
+    button.danger:hover {
+        color: #ef5350 !important;
+        border-color: #ef5350 !important;
+        background: rgba(239, 83, 80, 0.1) !important;
+    }
     .run-from-btn {
         color: #66bb6a !important;
         font-size: 13px !important;
         padding: 2px 6px !important;
     }
+    .run-from-btn:hover {
+        color: #66bb6a !important;
+        border-color: #66bb6a !important;
+        background: rgba(102, 187, 106, 0.1) !important;
+    }
     .step-summary {
         padding: 4px 8px 8px 36px;
         font-size: 11px;
-        color: #888;
+        color: #6b7280;
     }
     .step-summary-text {
         display: block;
@@ -385,7 +408,7 @@
         flex: 1;
         max-width: 200px;
         height: 6px;
-        background: #0f3460;
+        background: #1e1e1e;
         border-radius: 3px;
         overflow: hidden;
     }
@@ -397,7 +420,7 @@
     }
     .progress-label-inline {
         font-size: 10px;
-        color: #888;
+        color: #6b7280;
         white-space: nowrap;
     }
     .drop-indicator {
@@ -417,11 +440,11 @@
         bottom: 4px;
     }
     .drag-preview {
-        background: #16213e;
+        background: #141414;
         border: 1px solid #e94560;
         border-radius: 4px;
         padding: 8px 12px;
-        color: #e0e0e0;
+        color: #ececec;
         font-size: 13px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }

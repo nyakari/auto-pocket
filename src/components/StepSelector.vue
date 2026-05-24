@@ -51,12 +51,16 @@
 <style scoped>
     select {
         width: 100%;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 3px;
         padding: 4px 6px;
         font-size: 12px;
+    }
+    select:focus {
+        border-color: #404040;
+        outline: none;
     }
     select:disabled {
         opacity: 0.5;

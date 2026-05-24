@@ -246,7 +246,7 @@
 
 <style scoped>
     .screenshot-area {
-        border: 1px solid #0f3460;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         overflow: hidden;
     }
@@ -254,7 +254,7 @@
         display: flex;
         align-items: center;
         padding: 8px;
-        border-bottom: 1px solid #0f3460;
+        border-bottom: 1px solid #2a2a2a;
     }
     .screenshot-area .toolbar h3 {
         font-size: 13px;
@@ -266,9 +266,9 @@
         margin: 0 8px;
         font-size: 11px;
         padding: 2px 4px;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 3px;
         max-width: 300px;
     }
@@ -279,9 +279,9 @@
         flex-shrink: 0;
     }
     button.small {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 3px 10px;
         border-radius: 3px;
         cursor: pointer;
@@ -300,9 +300,9 @@
     }
     .window-label {
         font-size: 11px;
-        color: #888;
+        color: #6b7280;
         padding: 4px 8px;
-        border-bottom: 1px solid #0f3460;
+        border-bottom: 1px solid #2a2a2a;
     }
     .img-wrapper {
         position: relative;
@@ -351,13 +351,13 @@
         height: 14px;
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        border: 2px solid #42a5f5;
+        border: 2px solid #e94560;
     }
     .swipe-start {
-        background: rgba(66, 165, 245, 0.3);
+        background: rgba(233, 69, 60, 0.15);
     }
     .swipe-end {
-        background: #42a5f5;
+        background: #e94560;
     }
     .swipe-label {
         position: absolute;
@@ -365,14 +365,14 @@
         left: 50%;
         transform: translateX(-50%);
         font-size: 9px;
-        color: #42a5f5;
+        color: #e94560;
         font-weight: bold;
         white-space: nowrap;
     }
     .placeholder {
         padding: 60px 20px;
         text-align: center;
-        color: #666;
+        color: #4b5563;
         font-size: 13px;
     }
     .pick-hint {

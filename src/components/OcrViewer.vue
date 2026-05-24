@@ -92,28 +92,31 @@
     }
     .toolbar .ts {
         font-size: 11px;
-        color: #888;
+        color: #6b7280;
     }
     .toolbar button {
         margin-left: auto;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 4px 12px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 12px;
+    }
+    .toolbar button:hover {
+        border-color: #404040;
     }
     .toolbar button:disabled {
         opacity: 0.4;
         cursor: default;
     }
     .image-area {
-        border: 1px solid #0f3460;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         overflow: auto;
         max-height: 50vh;
-        background: #111;
+        background: #0d0d0d;
     }
     .image-area img {
         display: block;
@@ -122,7 +125,7 @@
     .placeholder {
         padding: 40px;
         text-align: center;
-        color: #666;
+        color: #4b5563;
         border: 1px dashed #333;
         border-radius: 4px;
         margin-bottom: 12px;
@@ -142,8 +145,8 @@
     .ocr-result pre {
         flex: 1;
         overflow: auto;
-        background: #111;
-        border: 1px solid #0f3460;
+        background: #0d0d0d;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         padding: 8px;
         font-size: 12px;

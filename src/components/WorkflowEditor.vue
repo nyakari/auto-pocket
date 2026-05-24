@@ -681,7 +681,6 @@
         min-width: 380px;
         display: flex;
         flex-direction: column;
-        border-right: 1px solid #0f3460;
         min-height: 0;
     }
     .editor-left-top {
@@ -705,7 +704,7 @@
     .section label {
         display: block;
         font-size: 12px;
-        color: #aaa;
+        color: #9ca3af;
         margin-bottom: 4px;
     }
     .section-header {
@@ -718,20 +717,23 @@
         margin: 0;
     }
     button.small {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 3px 10px;
         border-radius: 3px;
         cursor: pointer;
         font-size: 11px;
+    }
+    button.small:hover {
+        border-color: #404040;
     }
     button.small:disabled {
         opacity: 0.5;
     }
     .no-items {
         font-size: 12px;
-        color: #555;
+        color: #3f3f3f;
         padding: 16px;
         text-align: center;
     }

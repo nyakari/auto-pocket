@@ -2,7 +2,6 @@
     <div class="panel">
         <h3>Target Window</h3>
         <div class="select-row">
-            {{ selectedHandle }}
             <select v-model="selectedHandle" size="5">
                 <option v-for="w in windows" :key="w.id" :value="w.id">
                     {{ w.title }} [{{ w.id }}]
@@ -57,7 +56,7 @@
 <style scoped>
     .panel {
         padding: 12px;
-        border-bottom: 1px solid #0f3460;
+        border-bottom: 1px solid #2a2a2a;
     }
     h3 {
         font-size: 13px;
@@ -66,9 +65,9 @@
     }
     .select-row select {
         width: 100%;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         font-size: 12px;
         min-height: 100px;
@@ -83,13 +82,16 @@
     }
     .btn-row button {
         flex: 1;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 6px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 12px;
+    }
+    .btn-row button:hover {
+        border-color: #404040;
     }
     .btn-row button:disabled {
         opacity: 0.4;

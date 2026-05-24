@@ -363,7 +363,7 @@
 <style scoped>
     .step-detail {
         padding: 8px;
-        border-top: 1px solid #0f3460;
+        border-top: 1px solid #2a2a2a;
     }
     .step-progress {
         margin-top: 8px;
@@ -374,7 +374,7 @@
     .progress-bar {
         flex: 1;
         height: 8px;
-        background: #0f3460;
+        background: #1e1e1e;
         border-radius: 4px;
         overflow: hidden;
     }
@@ -386,7 +386,7 @@
     }
     .progress-label {
         font-size: 10px;
-        color: #888;
+        color: #6b7280;
         white-space: nowrap;
     }
     .detail-grid {
@@ -406,25 +406,31 @@
     .field label,
     .field-full label {
         font-size: 11px;
-        color: #aaa;
+        color: #9ca3af;
         margin-bottom: 2px;
     }
     .field input,
     .field-full input,
     .field select {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 3px;
         padding: 4px 6px;
         font-size: 12px;
+    }
+    .field input:focus,
+    .field-full input:focus,
+    .field select:focus {
+        border-color: #404040;
+        outline: none;
     }
     .field input[type='number'] {
         width: 100%;
     }
     .field-hint {
         font-size: 10px;
-        color: #666;
+        color: #4b5563;
         margin-top: 2px;
     }
     .checkbox-label {
@@ -432,7 +438,7 @@
         align-items: center;
         gap: 6px;
         font-size: 11px;
-        color: #aaa;
+        color: #9ca3af;
         cursor: pointer;
         margin-top: 4px;
     }
@@ -441,13 +447,16 @@
         accent-color: #e94560;
     }
     button.small {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 3px 10px;
         border-radius: 3px;
         cursor: pointer;
         font-size: 11px;
+    }
+    button.small:hover {
+        border-color: #404040;
     }
     button.small:disabled {
         opacity: 0.5;

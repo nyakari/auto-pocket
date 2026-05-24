@@ -234,18 +234,23 @@
     label {
         display: block;
         font-size: 12px;
-        color: #aaa;
+        color: #9ca3af;
         margin-bottom: 4px;
     }
     input,
     select {
         width: 100%;
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         padding: 6px 8px;
         font-size: 13px;
+    }
+    input:focus,
+    select:focus {
+        border-color: #404040;
+        outline: none;
     }
     input:disabled,
     select:disabled {
@@ -261,20 +266,23 @@
         margin: 0;
     }
     button.small {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
         padding: 2px 8px;
         border-radius: 3px;
         cursor: pointer;
         font-size: 11px;
     }
+    button.small:hover {
+        border-color: #404040;
+    }
     button.danger {
         color: #ef5350;
     }
     .rule-card {
-        background: #16213e;
-        border: 1px solid #0f3460;
+        background: #141414;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
         padding: 8px;
         margin-bottom: 6px;
@@ -305,7 +313,7 @@
     }
     .no-rules {
         font-size: 12px;
-        color: #555;
+        color: #3f3f3f;
         padding: 8px;
         text-align: center;
     }
@@ -327,9 +335,12 @@
         opacity: 0.4;
     }
     .actions button:not(.start):not(.stop) {
-        background: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #1a1a4e;
+        background: #1e1e1e;
+        color: #ececec;
+        border: 1px solid #2a2a2a;
+    }
+    .actions button:not(.start):not(.stop):hover {
+        border-color: #404040;
     }
     .start {
         background: #2e7d32;
@@ -346,15 +357,15 @@
         align-items: center;
         gap: 4px;
         font-size: 12px;
-        color: #888;
+        color: #6b7280;
         cursor: pointer;
         padding: 6px 12px;
-        border: 1px solid #0f3460;
+        border: 1px solid #2a2a2a;
         border-radius: 4px;
-        background: #16213e;
+        background: #141414;
     }
     .radio-label.active {
-        color: #e0e0e0;
+        color: #ececec;
         border-color: #e94560;
     }
     .radio-label input {
