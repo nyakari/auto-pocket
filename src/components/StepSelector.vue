@@ -1,10 +1,12 @@
 <template>
-    <select v-model="selectedId" :disabled="disabled">
-        <option v-if="includeContinue" value="">-- Continue (next step) --</option>
-        <option v-for="s in availableSteps" :key="s.step.id" :value="s.step.id">
-            {{ s.label }}
-        </option>
-    </select>
+    <div class="select-wrapper">
+        <select v-model="selectedId" :disabled="disabled" class="custom-select">
+            <option v-if="includeContinue" value="">-- Continue (next step) --</option>
+            <option v-for="s in availableSteps" :key="s.step.id" :value="s.step.id">
+                {{ s.label }}
+            </option>
+        </select>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -49,20 +51,42 @@
 </script>
 
 <style scoped>
-    select {
+    .select-wrapper {
+        position: relative;
         width: 100%;
-        background: #1e1e1e;
-        color: #ececec;
-        border: 1px solid #2a2a2a;
-        border-radius: 3px;
-        padding: 4px 6px;
-        font-size: 12px;
     }
-    select:focus {
-        border-color: #404040;
+
+    .custom-select {
+        width: 100%;
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 8px 12px;
+        font-size: 13px;
         outline: none;
+        appearance: none;
+        cursor: pointer;
+        transition: border-color var(--transition-fast);
     }
-    select:disabled {
-        opacity: 0.5;
+
+    .custom-select:focus {
+        border-color: var(--color-accent);
+    }
+
+    .select-wrapper::after {
+        content: '▼';
+        font-size: 8px;
+        color: var(--text-muted);
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .custom-select:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
     }
 </style>

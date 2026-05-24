@@ -61,4 +61,6 @@ contextBridge.exposeInMainWorld('api', {
     selectAdb: () => ipcRenderer.invoke('select-adb'),
 
     clearPersistentVars: () => ipcRenderer.invoke('clear-persistent-vars'),
+    resizeWindow: (handle: number, width: number, height: number) =>
+        ipcRenderer.invoke('resize-window', handle, width, height),
 })

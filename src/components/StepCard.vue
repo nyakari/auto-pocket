@@ -13,50 +13,66 @@
                 },
             ]"
             @click="emit('select')"
+            @mouseenter="emit('hover', true)"
+            @mouseleave="emit('hover', false)"
         >
             <div class="step-header">
                 <div class="drag-handle" ref="dragHandleRef">
                     <span class="grip">⋮⋮</span>
                 </div>
                 <span class="step-num">{{ stepIndex + 1 }}</span>
-                <select v-model="step.type" @change="onTypeChange" :disabled="disabled">
-                    <option value="clickXY">Click XY</option>
-                    <option value="clickText">Click Text</option>
-                    <option value="waitText">Wait for Text</option>
-                    <option value="wait">Wait (Delay)</option>
-                    <option value="goto">Go to Step</option>
-                    <option value="condition">Condition</option>
-                    <option value="setVar">Set Variable</option>
-                    <option value="checkVar">Check Variable</option>
-                    <option value="swipe">Swipe / Drag</option>
-                    <option value="countText">Count Text</option>
-                    <option value="captureLine">Capture Line</option>
-                </select>
+                <div class="select-wrapper">
+                    <select
+                        v-model="step.type"
+                        @change="onTypeChange"
+                        :disabled="disabled"
+                        class="custom-select-inline"
+                    >
+                        <option value="clickXY">Click XY</option>
+                        <option value="clickText">Click Text</option>
+                        <option value="waitText">Wait for Text</option>
+                        <option value="wait">Wait (Delay)</option>
+                        <option value="goto">Go to Step</option>
+                        <option value="condition">Condition</option>
+                        <option value="setVar">Set Variable</option>
+                        <option value="checkVar">Check Variable</option>
+                        <option value="swipe">Swipe / Drag</option>
+                        <option value="countText">Count Text</option>
+                        <option value="captureLine">Capture Line</option>
+                    </select>
+                </div>
                 <input
                     v-model="step.name"
                     placeholder="Step name"
                     class="step-name"
                     :disabled="disabled"
                 />
-                <button
-                    class="small run-from-btn"
-                    @click.stop="emit('runFrom')"
-                    :disabled="disabled"
-                    title="Run from this step"
-                >
-                    &#9654;
-                </button>
-                <button
-                    class="small"
-                    @click.stop="emit('duplicate')"
-                    :disabled="disabled"
-                    title="Duplicate step"
-                >
-                    &#x29C9;
-                </button>
-                <button class="small danger" @click.stop="emit('remove')" :disabled="disabled">
-                    &#10005;
-                </button>
+                <div class="action-buttons">
+                    <button
+                        class="btn-action run-from-btn"
+                        @click.stop="emit('runFrom')"
+                        :disabled="disabled"
+                        title="Run from this step"
+                    >
+                        ▶
+                    </button>
+                    <button
+                        class="btn-action dup-btn"
+                        @click.stop="emit('duplicate')"
+                        :disabled="disabled"
+                        title="Duplicate step"
+                    >
+                        ❐
+                    </button>
+                    <button
+                        class="btn-action delete-btn"
+                        @click.stop="emit('remove')"
+                        :disabled="disabled"
+                        title="Delete step"
+                    >
+                        ✕
+                    </button>
+                </div>
             </div>
             <StepDetail
                 v-if="isSelected"
@@ -68,26 +84,34 @@
                 :show-progress="isCurrentStep"
                 :progress="progress"
                 :disabled="disabled"
+                :saved-workflows="savedWorkflows"
                 @start-picking-coords="emit('startPickingCoords')"
                 @start-picking-swipe="emit('startPickingSwipe')"
             />
             <div v-else class="step-summary">
                 <span class="step-summary-text">{{ summaryText }}</span>
-                <div v-if="isCurrentStep && progress" class="step-progress-inline">
-                    <div class="progress-bar-inline">
+                <div v-if="isCurrentStep" class="step-progress-inline">
+                    <div class="progress-bar-inline" :class="{ indeterminate: isIndeterminate }">
                         <div
                             class="progress-fill-inline"
-                            :style="{
-                                width:
-                                    (progress.total > 0
-                                        ? (progress.elapsed / progress.total) * 100
-                                        : 0) + '%',
-                            }"
+                            :style="
+                                isIndeterminate
+                                    ? {}
+                                    : {
+                                          width:
+                                              (progress && progress.total > 0
+                                                  ? (progress.elapsed / progress.total) * 100
+                                                  : 0) + '%',
+                                      }
+                            "
                         ></div>
                     </div>
                     <span class="progress-label-inline">
-                        {{ Math.round(progress.elapsed / 1000) }}s /
-                        {{ Math.round(progress.total / 1000) }}s
+                        <template v-if="isIndeterminate"> Wait Before... </template>
+                        <template v-else-if="progress">
+                            {{ Math.round(progress.elapsed / 1000) }}s /
+                            {{ Math.round(progress.total / 1000) }}s
+                        </template>
                     </span>
                 </div>
             </div>
@@ -140,6 +164,7 @@
         useScrcpy?: boolean
         progress?: WorkflowProgress | null
         disabled?: boolean
+        savedWorkflows: any[]
     }>()
 
     const emit = defineEmits<{
@@ -149,6 +174,7 @@
         duplicate: []
         startPickingCoords: []
         startPickingSwipe: []
+        hover: [isHovered: boolean]
     }>()
 
     const elRef = ref<HTMLDivElement | null>(null)
@@ -166,6 +192,10 @@
     const summaryText = computed(() =>
         stepSummary(props.step, props.allSteps, props.useScrcpy ?? false),
     )
+
+    const isIndeterminate = computed(() => {
+        return !props.progress || props.progress.type === 'waitBefore'
+    })
 
     const previewLabel = computed(() => {
         if (props.step.name && props.step.name.trim()) {
@@ -261,191 +291,299 @@
     .relative {
         position: relative;
     }
+
     .step-card {
-        background: #141414;
-        border: 1px solid #2a2a2a;
-        border-radius: 4px;
-        margin-bottom: 6px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        margin-bottom: 8px;
         cursor: pointer;
-        transition:
-            opacity 0.15s ease,
-            border-color 0.15s ease;
+        transition: all var(--transition-fast);
+        overflow: hidden;
     }
+
     .step-card:hover {
-        border-color: #404040;
+        border-color: var(--border-hover);
+        background: var(--bg-card-hover);
     }
+
     .step-card.active {
-        border-color: #e94560;
+        border-color: var(--color-accent);
+        box-shadow: 0 4px 16px rgba(244, 63, 94, 0.12);
     }
+
     .step-card.running {
-        border-color: #ffa726;
+        border-color: var(--color-warning);
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+        animation: borderPulse 1.8s infinite;
     }
+
     .step-card.done {
-        border-color: #2e7d32;
+        border-color: var(--color-success);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
     }
+
     .step-card.is-dragging {
         opacity: 0.4;
     }
+
     .step-header {
         display: flex;
         align-items: center;
-        gap: 4px;
-        padding: 6px 8px;
+        gap: 8px;
+        padding: 10px 14px;
     }
+
     .drag-handle {
         cursor: grab;
-        padding: 0 2px;
+        padding: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
         user-select: none;
         -webkit-user-select: none;
     }
+
     .drag-handle:active {
         cursor: grabbing;
     }
+
     .grip {
-        color: #4b5563;
-        font-size: 12px;
+        color: var(--text-muted);
+        font-size: 14px;
         line-height: 1;
-        letter-spacing: -1px;
+        letter-spacing: -1.5px;
+        transition: color var(--transition-fast);
     }
+
     .drag-handle:hover .grip {
-        color: #9ca3af;
+        color: var(--text-secondary);
     }
+
     .step-num {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
-        background: #1e1e1e;
-        color: #e94560;
+        background: var(--bg-main);
+        color: var(--color-accent);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 11px;
-        font-weight: bold;
+        font-weight: 800;
+        border: 1px solid rgba(244, 63, 94, 0.2);
     }
-    .step-header select {
-        flex: 0 0 110px;
-        font-size: 11px;
-        padding: 2px 4px;
-        background: #1e1e1e;
-        color: #ececec;
-        border: 1px solid #2a2a2a;
-        border-radius: 3px;
+
+    .select-wrapper {
+        position: relative;
     }
-    .step-header select:disabled {
+
+    .custom-select-inline {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 20px 4px 8px;
+        outline: none;
+        cursor: pointer;
+        appearance: none;
+        transition: border-color var(--transition-fast);
+    }
+
+    .select-wrapper::after {
+        content: '▼';
+        font-size: 7px;
+        color: var(--text-muted);
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .custom-select-inline:focus {
+        border-color: var(--color-accent);
+    }
+
+    .custom-select-inline:disabled {
         opacity: 0.5;
     }
+
     .step-name {
         flex: 1;
-        font-size: 12px;
-        padding: 2px 6px;
+        font-size: 13px;
+        font-weight: 550;
+        padding: 4px 8px;
         background: transparent;
-        color: #ececec;
+        color: var(--text-primary);
         border: 1px solid transparent;
-        border-radius: 3px;
+        border-radius: var(--radius-sm);
+        outline: none;
+        transition: all var(--transition-fast);
     }
+
     .step-name:focus {
-        border-color: #404040;
+        background: var(--bg-main);
+        border-color: var(--border-color);
     }
+
     .step-name:disabled {
         opacity: 0.5;
     }
-    button.small {
+
+    .action-buttons {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .btn-action {
         background: transparent;
-        color: #6b7280;
         border: 1px solid transparent;
-        padding: 3px 6px;
-        border-radius: 3px;
         cursor: pointer;
-        font-size: 11px;
-        transition:
-            color 0.15s ease,
-            border-color 0.15s ease;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        color: var(--text-muted);
+        transition: all var(--transition-fast);
     }
-    button.small:hover {
-        color: #ececec;
-        border-color: #2a2a2a;
-        background: #1e1e1e;
+
+    .btn-action:hover:not(:disabled) {
+        background: var(--bg-main);
+        border-color: var(--border-color);
+        color: var(--text-primary);
     }
-    button.small:disabled {
-        opacity: 0.5;
+
+    .btn-action:disabled {
+        opacity: 0.4;
     }
-    button.danger {
-        color: #ef5350;
-    }
-    button.danger:hover {
-        color: #ef5350 !important;
-        border-color: #ef5350 !important;
-        background: rgba(239, 83, 80, 0.1) !important;
-    }
+
     .run-from-btn {
-        color: #66bb6a !important;
-        font-size: 13px !important;
-        padding: 2px 6px !important;
+        color: var(--color-success);
     }
-    .run-from-btn:hover {
-        color: #66bb6a !important;
-        border-color: #66bb6a !important;
-        background: rgba(102, 187, 106, 0.1) !important;
+    .run-from-btn:hover:not(:disabled) {
+        background: rgba(16, 185, 129, 0.1) !important;
+        border-color: rgba(16, 185, 129, 0.2) !important;
+        color: var(--color-success) !important;
     }
+
+    .delete-btn {
+        color: var(--color-danger);
+    }
+    .delete-btn:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.1) !important;
+        border-color: rgba(239, 68, 68, 0.2) !important;
+        color: var(--color-danger) !important;
+    }
+
     .step-summary {
-        padding: 4px 8px 8px 36px;
-        font-size: 11px;
-        color: #6b7280;
+        padding: 0 14px 12px 42px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 500;
     }
+
     .step-summary-text {
         display: block;
-        margin-bottom: 4px;
+        line-height: 1.4;
     }
+
     .step-progress-inline {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        margin-top: 6px;
     }
+
     .progress-bar-inline {
         flex: 1;
-        max-width: 200px;
+        max-width: 160px;
         height: 6px;
-        background: #1e1e1e;
-        border-radius: 3px;
+        background: var(--bg-main);
+        border-radius: var(--radius-full);
         overflow: hidden;
+        border: 1px solid var(--border-color);
+        position: relative;
     }
+
     .progress-fill-inline {
         height: 100%;
-        background: #ffa726;
-        border-radius: 3px;
+        background: var(--color-warning);
+        border-radius: var(--radius-full);
         transition: width 0.25s linear;
     }
+
+    .progress-bar-inline.indeterminate .progress-fill-inline {
+        width: 50% !important;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(90deg, transparent, var(--color-warning), transparent);
+        animation: progress-indeterminate 1.5s infinite linear;
+        transition: none;
+    }
+
+    @keyframes progress-indeterminate {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(200%);
+        }
+    }
+
     .progress-label-inline {
         font-size: 10px;
-        color: #6b7280;
+        font-weight: 600;
+        color: var(--text-muted);
         white-space: nowrap;
     }
+
     .drop-indicator {
         position: absolute;
         left: 0;
         right: 0;
-        height: 3px;
-        background: #e94560;
-        border-radius: 2px;
+        height: 4px;
+        background: var(--color-accent);
+        border-radius: var(--radius-full);
         pointer-events: none;
         z-index: 10;
+        box-shadow: 0 0 8px var(--color-accent);
     }
+
     .drop-indicator.top {
-        top: -2px;
+        top: -4px;
     }
+
     .drop-indicator.bottom {
         bottom: 4px;
     }
+
     .drag-preview {
-        background: #141414;
-        border: 1px solid #e94560;
-        border-radius: 4px;
-        padding: 8px 12px;
-        color: #ececec;
+        background: var(--bg-card);
+        border: 2px solid var(--color-accent);
+        border-radius: var(--radius-md);
+        padding: 10px 16px;
+        color: var(--text-primary);
         font-size: 13px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes borderPulse {
+        0%,
+        100% {
+            border-color: var(--color-warning);
+        }
+        50% {
+            border-color: #fbbf24;
+        }
     }
 </style>

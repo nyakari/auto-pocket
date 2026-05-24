@@ -1,14 +1,26 @@
 <template>
     <div class="section">
         <label>Workflow Name</label>
-        <input v-model="localName" placeholder="e.g. Battle Auto-Farm" :disabled="disabled" />
+        <input
+            v-model="localName"
+            placeholder="e.g. Battle Auto-Farm"
+            :disabled="disabled"
+            class="custom-input"
+        />
         <div class="wf-select-row" v-if="savedWorkflows.length > 0">
-            <select v-model="selectedWfName" @change="onLoad">
-                <option value="">-- Load saved --</option>
-                <option v-for="wf in savedWorkflows" :key="wf.name" :value="wf.name">
-                    {{ wf.name }}
-                </option>
-            </select>
+            <div class="select-wrapper">
+                <select
+                    v-model="selectedWfName"
+                    @change="onLoad"
+                    :disabled="disabled"
+                    class="custom-select"
+                >
+                    <option value="">-- Load Saved Workflow --</option>
+                    <option v-for="wf in savedWorkflows" :key="wf.name" :value="wf.name">
+                        {{ wf.name }}
+                    </option>
+                </select>
+            </div>
         </div>
     </div>
 </template>
@@ -52,33 +64,81 @@
 
 <style scoped>
     .section {
-        margin-bottom: 16px;
+        margin-bottom: 20px;
     }
-    .section label {
+
+    label {
         display: block;
         font-size: 12px;
-        color: #9ca3af;
-        margin-bottom: 4px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        letter-spacing: 0.2px;
     }
-    .section input,
-    .section select {
+
+    .custom-input {
         width: 100%;
-        background: #1e1e1e;
-        color: #ececec;
-        border: 1px solid #2a2a2a;
-        border-radius: 4px;
-        padding: 6px 8px;
-        font-size: 13px;
-    }
-    .section input:focus,
-    .section select:focus {
-        border-color: #404040;
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 10px 14px;
+        font-size: 14px;
         outline: none;
+        transition:
+            border-color var(--transition-fast),
+            box-shadow var(--transition-fast);
     }
-    .section input:disabled {
-        opacity: 0.5;
+
+    .custom-input:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.15);
     }
+
+    .custom-input:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
     .wf-select-row {
-        margin-top: 6px;
+        margin-top: 10px;
+    }
+
+    .select-wrapper {
+        position: relative;
+    }
+
+    .custom-select {
+        width: 100%;
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 10px 14px;
+        font-size: 13px;
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+        transition: border-color var(--transition-fast);
+    }
+
+    .custom-select:focus {
+        border-color: var(--color-accent);
+    }
+
+    .select-wrapper::after {
+        content: '▼';
+        font-size: 8px;
+        color: var(--text-muted);
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .custom-select:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
     }
 </style>

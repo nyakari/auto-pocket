@@ -10,6 +10,7 @@ export type StepType =
     | 'swipe'
     | 'countText'
     | 'captureLine'
+    | 'callWorkflow'
 
 export interface Step {
     id: string
@@ -39,11 +40,14 @@ export interface Step {
     varValue?: string
     persist?: boolean
     duration?: number
+    targetWorkflow?: string
 }
 
 export interface SavedWorkflow {
     name: string
     steps: Step[]
+    windowWidth?: number
+    windowHeight?: number
 }
 
 export interface WorkflowProgress {
@@ -153,6 +157,8 @@ export function stepSummary(step: Step, steps: Step[], useScrcpy: boolean = fals
                       : 'first'
             return `Capture "${step.when || '?'}" (${m} match${step.wholeWord ? ', whole word' : ''}) → var "${step.varName || '?'}"${step.persist ? ' [persistent]' : ''}`
         }
+        case 'callWorkflow':
+            return `Call sub-workflow: "${step.targetWorkflow || '?'}"`
     }
     return ''
 }
@@ -180,6 +186,7 @@ export function resetStepFields(step: Step) {
     delete step.x2
     delete step.y2
     delete step.duration
+    delete step.targetWorkflow
 }
 
 export function setStepDefaults(step: Step, steps: Step[]) {
@@ -260,6 +267,9 @@ export function setStepDefaults(step: Step, steps: Step[]) {
             step.matchN = 1
             step.persist = false
             step.wholeWord = false
+            break
+        case 'callWorkflow':
+            step.targetWorkflow = ''
             break
     }
 }

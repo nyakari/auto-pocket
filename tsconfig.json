@@ -12,6 +12,6 @@
         "resolveJsonModule": true,
         "ignoreDeprecations": "6.0"
     },
-    "include": ["lib/**/*"],
-    "exclude": ["node_modules", "dist", "examples", "src"]
+    "include": ["lib/**/*", "src/global.d.ts"],
+    "exclude": ["node_modules", "dist", "examples"]
 }

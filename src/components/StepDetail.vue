@@ -2,28 +2,32 @@
     <div class="step-detail">
         <div class="detail-grid">
             <div class="field">
-                <label>Wait before (s)</label>
-                <input v-model.number="step.waitBeforeMs" type="number" min="0" step="0.5" />
+                <label>Wait Before (s)</label>
+                <input
+                    v-model.number="step.waitBeforeMs"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    class="custom-input"
+                />
             </div>
 
             <template v-if="step.type === 'clickXY'">
                 <div class="field">
-                    <label>X</label>
-                    <input v-model.number="step.x" type="number" />
+                    <label>Target X</label>
+                    <input v-model.number="step.x" type="number" class="custom-input" />
                 </div>
                 <div class="field">
-                    <label>Y</label>
-                    <input v-model.number="step.y" type="number" />
+                    <label>Target Y</label>
+                    <input v-model.number="step.y" type="number" class="custom-input" />
                 </div>
                 <div class="field-full">
                     <button
-                        class="small"
+                        class="btn-pick"
                         @click="emit('startPickingCoords')"
                         :class="{ active: isPickingCoords }"
                     >
-                        {{
-                            isPickingCoords ? 'Click on screenshot to set' : 'Pick from screenshot'
-                        }}
+                        {{ isPickingCoords ? '🎯 Click on screenshot' : '📍 Pick from screenshot' }}
                     </button>
                 </div>
             </template>
@@ -32,9 +36,13 @@
                 <div class="field-full">
                     <label
                         >Text to
-                        {{ step.type === 'clickText' ? 'find & click' : 'wait for' }}</label
+                        {{ step.type === 'clickText' ? 'Find & Click' : 'Wait For' }}</label
                     >
-                    <input v-model="(step as any).when" placeholder="e.g. Battle" />
+                    <input
+                        v-model="(step as any).when"
+                        placeholder="e.g. Battle"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
                     <label>Timeout (s)</label>
@@ -43,28 +51,34 @@
                         type="number"
                         min="1"
                         step="1"
+                        class="custom-input"
                     />
                 </div>
                 <template v-if="step.type === 'clickText'">
                     <div class="field">
-                        <label>Which match</label>
-                        <select v-model="(step as any).matchMode">
-                            <option value="first">First</option>
-                            <option value="last">Last</option>
-                            <option value="nth">Nth</option>
-                        </select>
+                        <label>Which Match</label>
+                        <div class="select-wrapper">
+                            <select v-model="(step as any).matchMode" class="custom-select">
+                                <option value="first">First Match</option>
+                                <option value="last">Last Match</option>
+                                <option value="nth">N-th Match</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="field" v-if="(step as any).matchMode === 'nth'">
-                        <label>Match number</label>
-                        <input v-model.number="(step as any).matchN" type="number" step="1" />
-                        <span class="field-hint"
-                            >1 = first, 2 = second, -1 = last, -2 = 2nd last</span
-                        >
+                        <label>Match Number (N)</label>
+                        <input
+                            v-model.number="(step as any).matchN"
+                            type="number"
+                            step="1"
+                            class="custom-input"
+                        />
+                        <span class="field-hint">1 = 1st, 2 = 2nd, -1 = last</span>
                     </div>
                     <div class="field-full">
                         <label class="checkbox-label">
                             <input type="checkbox" v-model="(step as any).wholeWord" />
-                            Match whole word only
+                            <span>Match whole word only</span>
                         </label>
                     </div>
                 </template>
@@ -78,6 +92,7 @@
                         type="number"
                         min="0.1"
                         step="0.5"
+                        class="custom-input"
                     />
                 </div>
             </template>
@@ -96,8 +111,12 @@
 
             <template v-if="step.type === 'condition'">
                 <div class="field-full">
-                    <label>Text to find</label>
-                    <input v-model="(step as any).when" placeholder="e.g. Battle" />
+                    <label>Text to Find</label>
+                    <input
+                        v-model="(step as any).when"
+                        placeholder="e.g. Battle"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field-full">
                     <label>If found, go to step</label>
@@ -125,41 +144,58 @@
                         type="number"
                         min="1"
                         step="1"
+                        class="custom-input"
                     />
                 </div>
                 <div class="field-full">
                     <label class="checkbox-label">
                         <input type="checkbox" v-model="(step as any).wholeWord" />
-                        Match whole word only
+                        <span>Match whole word only</span>
                     </label>
                 </div>
             </template>
 
             <template v-if="step.type === 'setVar'">
                 <div class="field">
-                    <label>Variable name</label>
-                    <input v-model="(step as any).varName" placeholder="e.g. victory" />
+                    <label>Variable Name</label>
+                    <input
+                        v-model="(step as any).varName"
+                        placeholder="e.g. victory"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
                     <label>Value</label>
-                    <input v-model="(step as any).varValue" placeholder="e.g. true" />
+                    <input
+                        v-model="(step as any).varValue"
+                        placeholder="e.g. true"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field-full">
                     <label class="checkbox-label">
                         <input type="checkbox" v-model="(step as any).persist" />
-                        Persist across workflow runs
+                        <span>Persist across workflow runs</span>
                     </label>
                 </div>
             </template>
 
             <template v-if="step.type === 'checkVar'">
                 <div class="field">
-                    <label>Variable name</label>
-                    <input v-model="(step as any).varName" placeholder="e.g. victory" />
+                    <label>Variable Name</label>
+                    <input
+                        v-model="(step as any).varName"
+                        placeholder="e.g. victory"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
-                    <label>Expected value</label>
-                    <input v-model="(step as any).varValue" placeholder="e.g. true" />
+                    <label>Expected Value</label>
+                    <input
+                        v-model="(step as any).varValue"
+                        placeholder="e.g. true"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field-full">
                     <label>If match, go to step</label>
@@ -185,19 +221,19 @@
             <template v-if="step.type === 'swipe'">
                 <div class="field">
                     <label>Start X</label>
-                    <input v-model.number="(step as any).x1" type="number" />
+                    <input v-model.number="(step as any).x1" type="number" class="custom-input" />
                 </div>
                 <div class="field">
                     <label>Start Y</label>
-                    <input v-model.number="(step as any).y1" type="number" />
+                    <input v-model.number="(step as any).y1" type="number" class="custom-input" />
                 </div>
                 <div class="field">
                     <label>End X</label>
-                    <input v-model.number="(step as any).x2" type="number" />
+                    <input v-model.number="(step as any).x2" type="number" class="custom-input" />
                 </div>
                 <div class="field">
                     <label>End Y</label>
-                    <input v-model.number="(step as any).y2" type="number" />
+                    <input v-model.number="(step as any).y2" type="number" class="custom-input" />
                 </div>
                 <div class="field">
                     <label>Duration (s)</label>
@@ -206,16 +242,19 @@
                         type="number"
                         min="0.1"
                         step="0.1"
+                        class="custom-input"
                     />
                 </div>
                 <div class="field-full">
                     <button
-                        class="small"
+                        class="btn-pick"
                         @click="emit('startPickingSwipe')"
                         :class="{ active: isPickingSwipe }"
                     >
                         {{
-                            isPickingSwipe ? 'Click start, then end point' : 'Pick from screenshot'
+                            isPickingSwipe
+                                ? '🎯 Click start, then end point'
+                                : '📍 Pick from screenshot'
                         }}
                     </button>
                 </div>
@@ -223,12 +262,20 @@
 
             <template v-if="step.type === 'countText'">
                 <div class="field-full">
-                    <label>Text to count</label>
-                    <input v-model="(step as any).when" placeholder="e.g. Deck" />
+                    <label>Text to Count</label>
+                    <input
+                        v-model="(step as any).when"
+                        placeholder="e.g. Deck"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
-                    <label>Variable name</label>
-                    <input v-model="(step as any).varName" placeholder="e.g. deck_count" />
+                    <label>Variable Name</label>
+                    <input
+                        v-model="(step as any).varName"
+                        placeholder="e.g. deck_count"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
                     <label>Timeout (s)</label>
@@ -237,31 +284,47 @@
                         type="number"
                         min="1"
                         step="1"
+                        class="custom-input"
                     />
                 </div>
             </template>
 
             <template v-if="step.type === 'captureLine'">
                 <div class="field-full">
-                    <label>Text to find</label>
-                    <input v-model="(step as any).when" placeholder="e.g. Deck" />
+                    <label>Text to Find</label>
+                    <input
+                        v-model="(step as any).when"
+                        placeholder="e.g. Deck"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
-                    <label>Which match</label>
-                    <select v-model="(step as any).matchMode">
-                        <option value="first">First</option>
-                        <option value="last">Last</option>
-                        <option value="nth">Nth</option>
-                    </select>
+                    <label>Which Match</label>
+                    <div class="select-wrapper">
+                        <select v-model="(step as any).matchMode" class="custom-select">
+                            <option value="first">First</option>
+                            <option value="last">Last</option>
+                            <option value="nth">Nth</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="field" v-if="(step as any).matchMode === 'nth'">
-                    <label>Match number</label>
-                    <input v-model.number="(step as any).matchN" type="number" step="1" />
-                    <span class="field-hint">1 = first, 2 = second, -1 = last, -2 = 2nd last</span>
+                    <label>Match Number (N)</label>
+                    <input
+                        v-model.number="(step as any).matchN"
+                        type="number"
+                        step="1"
+                        class="custom-input"
+                    />
+                    <span class="field-hint">1 = first, -1 = last</span>
                 </div>
                 <div class="field">
-                    <label>Variable name</label>
-                    <input v-model="(step as any).varName" placeholder="e.g. last_line" />
+                    <label>Variable Name</label>
+                    <input
+                        v-model="(step as any).varName"
+                        placeholder="e.g. last_line"
+                        class="custom-input"
+                    />
                 </div>
                 <div class="field">
                     <label>Timeout (s)</label>
@@ -270,41 +333,70 @@
                         type="number"
                         min="1"
                         step="1"
+                        class="custom-input"
                     />
                 </div>
                 <div class="field-full">
                     <label class="checkbox-label">
                         <input type="checkbox" v-model="(step as any).wholeWord" />
-                        Match whole word only
+                        <span>Match whole word only</span>
                     </label>
                 </div>
             </template>
+
+            <template v-if="step.type === 'callWorkflow'">
+                <div class="field-full">
+                    <label>Target Sub-Workflow</label>
+                    <div class="select-wrapper">
+                        <select
+                            v-model="(step as any).targetWorkflow"
+                            :disabled="disabled"
+                            class="custom-select"
+                        >
+                            <option value="" disabled>-- Select Workflow --</option>
+                            <option v-for="wf in savedWorkflows" :key="wf.name" :value="wf.name">
+                                {{ wf.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <span class="field-hint"
+                        >Runs the selected workflow as a subroutine and resumes.</span
+                    >
+                </div>
+            </template>
         </div>
-        <div v-if="showProgress && progress" class="step-progress">
-            <div class="progress-bar">
+        <div v-if="showProgress" class="step-progress">
+            <div class="progress-bar" :class="{ indeterminate: isIndeterminate }">
                 <div
                     class="progress-fill"
-                    :style="{
-                        width:
-                            (progress.total > 0 ? (progress.elapsed / progress.total) * 100 : 0) +
-                            '%',
-                    }"
+                    :style="
+                        isIndeterminate
+                            ? {}
+                            : {
+                                  width:
+                                      (progress && progress.total > 0
+                                          ? (progress.elapsed / progress.total) * 100
+                                          : 0) + '%',
+                              }
+                    "
                 ></div>
             </div>
             <span class="progress-label">
-                {{ progress.type === 'timeout' ? 'Timeout' : 'Wait' }}:
-                {{ Math.round(progress.elapsed / 1000) }}s /
-                {{ Math.round(progress.total / 1000) }}s
+                <template v-if="isIndeterminate"> Wait Before... </template>
+                <template v-else-if="progress">
+                    {{ progress.type === 'timeout' ? 'Timeout' : 'Wait' }}:
+                    {{ Math.round(progress.elapsed / 1000) }}s /
+                    {{ Math.round(progress.total / 1000) }}s
+                </template>
             </span>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { watch } from 'vue'
+    import { watch, computed } from 'vue'
     import StepSelector from './StepSelector.vue'
     import type { Step, WorkflowProgress } from '../lib/workflow'
-    import { resolveStepIndex } from '../lib/workflow'
 
     const props = defineProps<{
         step: Step
@@ -315,12 +407,17 @@
         showProgress?: boolean
         progress?: WorkflowProgress | null
         disabled?: boolean
+        savedWorkflows: any[]
     }>()
 
     const emit = defineEmits<{
         startPickingCoords: []
         startPickingSwipe: []
     }>()
+
+    const isIndeterminate = computed(() => {
+        return !props.progress || props.progress.type === 'waitBefore'
+    })
 
     watch(
         () => props.allSteps,
@@ -362,107 +459,198 @@
 
 <style scoped>
     .step-detail {
-        padding: 8px;
-        border-top: 1px solid #2a2a2a;
+        padding: 16px 20px 20px;
+        border-top: 1px solid var(--border-color);
+        background: rgba(0, 0, 0, 0.15);
     }
+
     .step-progress {
-        margin-top: 8px;
+        margin-top: 14px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
+
     .progress-bar {
         flex: 1;
         height: 8px;
-        background: #1e1e1e;
-        border-radius: 4px;
+        background: var(--bg-main);
+        border-radius: var(--radius-full);
         overflow: hidden;
+        border: 1px solid var(--border-color);
+        position: relative;
     }
+
     .progress-fill {
         height: 100%;
-        background: #ffa726;
-        border-radius: 4px;
+        background: var(--color-warning);
+        border-radius: var(--radius-full);
         transition: width 0.25s linear;
     }
+
+    .progress-bar.indeterminate .progress-fill {
+        width: 50% !important;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(90deg, transparent, var(--color-warning), transparent);
+        animation: progress-indeterminate 1.5s infinite linear;
+        transition: none;
+    }
+
+    @keyframes progress-indeterminate {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(200%);
+        }
+    }
+
     .progress-label {
-        font-size: 10px;
-        color: #6b7280;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
         white-space: nowrap;
     }
+
     .detail-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
+        gap: 12px;
     }
+
     .field {
         display: flex;
         flex-direction: column;
+        gap: 4px;
     }
+
     .field-full {
         grid-column: 1 / -1;
         display: flex;
         flex-direction: column;
+        gap: 4px;
     }
-    .field label,
-    .field-full label {
+
+    label {
         font-size: 11px;
-        color: #9ca3af;
-        margin-bottom: 2px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.1px;
     }
-    .field input,
-    .field-full input,
-    .field select {
-        background: #1e1e1e;
-        color: #ececec;
-        border: 1px solid #2a2a2a;
-        border-radius: 3px;
-        padding: 4px 6px;
-        font-size: 12px;
-    }
-    .field input:focus,
-    .field-full input:focus,
-    .field select:focus {
-        border-color: #404040;
+
+    .custom-input {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 8px 12px;
+        font-size: 13px;
         outline: none;
-    }
-    .field input[type='number'] {
+        transition:
+            border-color var(--transition-fast),
+            box-shadow var(--transition-fast);
         width: 100%;
     }
+
+    .custom-input:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.15);
+    }
+
+    .select-wrapper {
+        position: relative;
+    }
+
+    .custom-select {
+        width: 100%;
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 8px 12px;
+        font-size: 13px;
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+        transition: border-color var(--transition-fast);
+    }
+
+    .custom-select:focus {
+        border-color: var(--color-accent);
+    }
+
+    .select-wrapper::after {
+        content: '▼';
+        font-size: 8px;
+        color: var(--text-muted);
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
     .field-hint {
         font-size: 10px;
-        color: #4b5563;
+        color: var(--text-muted);
         margin-top: 2px;
     }
+
     .checkbox-label {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        color: #9ca3af;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 550;
+        color: var(--text-secondary);
         cursor: pointer;
         margin-top: 4px;
+        user-select: none;
     }
+
     .checkbox-label input[type='checkbox'] {
         margin: 0;
-        accent-color: #e94560;
+        width: 14px;
+        height: 14px;
+        accent-color: var(--color-accent);
     }
-    button.small {
-        background: #1e1e1e;
-        color: #ececec;
-        border: 1px solid #2a2a2a;
-        padding: 3px 10px;
-        border-radius: 3px;
+
+    .btn-pick {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        padding: 8px 14px;
+        border-radius: var(--radius-md);
         cursor: pointer;
-        font-size: 11px;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all var(--transition-fast);
+        margin-top: 4px;
     }
-    button.small:hover {
-        border-color: #404040;
+
+    .btn-pick:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-hover);
     }
-    button.small:disabled {
-        opacity: 0.5;
+
+    .btn-pick.active {
+        background: rgba(244, 63, 94, 0.1);
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+        box-shadow: 0 0 10px rgba(244, 63, 94, 0.1);
+        animation: pulseBtn 1.8s infinite;
     }
-    button.small.active {
-        background: #e94560;
-        border-color: #e94560;
+
+    @keyframes pulseBtn {
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
     }
 </style>

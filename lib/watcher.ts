@@ -1,6 +1,6 @@
 import { captureWindow, findWindowsByTitle } from './capture'
 import { ocrImage } from './ocr'
-import type { WatcherConfig, MatchEvent, OcrResult, LineBlock, WatcherStatus } from './types'
+import type { WatcherConfig, MatchEvent, LineBlock, WatcherStatus } from './types'
 
 export class Watcher {
     private config: WatcherConfig
@@ -14,7 +14,7 @@ export class Watcher {
 
     start(): void {
         if (this.timer) return
-        this.poll()
+        void this.poll()
         this.timer = setInterval(() => this.poll(), this.config.interval)
     }
 

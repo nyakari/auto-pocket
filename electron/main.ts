@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { execSync, exec } from 'child_process'
+import { execSync, exec, execFileSync } from 'child_process'
 import {
     listWindows,
     captureWindow,
@@ -14,9 +14,7 @@ import {
 import type {
     SavedConfig,
     Workflow,
-    WorkflowStep,
     WorkflowStepEvent,
-    WorkflowStepClickXY,
     WorkflowResult,
     WorkflowProgress,
 } from './types'
@@ -60,6 +58,33 @@ function savePersistentVars(vars: Map<string, string>): void {
         obj[k] = v
     })
     fs.writeFileSync(getPersistentVarsPath(), JSON.stringify(obj, null, 2))
+}
+
+function getWindowDpiScale(handle: number): number {
+    const psCommand = `
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+  [DllImport("user32.dll", SetLastError = true)]
+  public static extern uint GetDpiForWindow(IntPtr hwnd);
+}
+"@
+$dpi = [Win32]::GetDpiForWindow([IntPtr]${handle})
+if ($dpi -eq 0) { $dpi = 96 }
+$dpi
+`
+    try {
+        const out = execFileSync('powershell', ['-Command', psCommand], {
+            timeout: 2000,
+            encoding: 'utf-8',
+        }).trim()
+        const dpi = parseInt(out, 10) || 96
+        return dpi / 96
+    } catch (e: any) {
+        console.error(`[window] Failed to get window DPI scale: ${e.message}`)
+        return 1.0
+    }
 }
 
 function loadConfig(): SavedConfig {
@@ -122,10 +147,10 @@ function createWindow(): void {
     })
 
     if (isDev) {
-        mainWindow.loadURL('http://localhost:5173')
+        void mainWindow.loadURL('http://localhost:5173')
         mainWindow.webContents.openDevTools()
     } else {
-        mainWindow.loadFile(path.join(__dirname, '../src/dist/index.html'))
+        void mainWindow.loadFile(path.join(__dirname, '../src/dist/index.html'))
     }
 
     mainWindow.on('closed', () => {
@@ -168,8 +193,13 @@ async function pollCycle(config: SavedConfig): Promise<void> {
                 blocks: matched.map((b) => ({ text: b.text, bbox: b.bbox })),
             })
 
-            const cx = capture.window.x + Math.round((matched[0].bbox.x0 + matched[0].bbox.x1) / 2)
-            const cy = capture.window.y + Math.round((matched[0].bbox.y0 + matched[0].bbox.y1) / 2)
+            const dpiScale = getWindowDpiScale(wins[0].id)
+            const cx =
+                capture.window.x +
+                Math.round((matched[0].bbox.x0 + matched[0].bbox.x1) / 2 / dpiScale)
+            const cy =
+                capture.window.y +
+                Math.round((matched[0].bbox.y0 + matched[0].bbox.y1) / 2 / dpiScale)
 
             switch (rule.action) {
                 case 'click':
@@ -196,9 +226,9 @@ function startWatcher(config: SavedConfig): void {
     lastConfig = config
     const interval = Math.max(500, config.pollInterval || 2000)
 
-    pollCycle(config)
+    void pollCycle(config)
     pollTimer = setInterval(() => {
-        if (lastConfig) pollCycle(lastConfig)
+        if (lastConfig) void pollCycle(lastConfig)
     }, interval)
 
     send('watcher:status', { running: true })
@@ -228,6 +258,7 @@ async function runWorkflow(
     // Find target window once to reuse its position for mouse-mode clicks
     const wins = findWindowsByTitle(config.targetWindowTitle)
     const windowPos = wins.length > 0 ? { x: wins[0].x, y: wins[0].y } : undefined
+    const dpiScale = wins.length > 0 ? getWindowDpiScale(wins[0].id) : 1.0
 
     console.log(`[workflow] startIndex=${startIndex}, total steps=${workflow.steps.length}`)
     for (let i = startIndex; i < workflow.steps.length; i++) {
@@ -270,8 +301,8 @@ async function runWorkflow(
                         await adbTap(adb, step.x, step.y)
                         sendEvent('success', { message: `Tapped device at (${step.x}, ${step.y})` })
                     } else {
-                        const sx = step.x + (windowPos?.x ?? 0)
-                        const sy = step.y + (windowPos?.y ?? 0)
+                        const sx = Math.round(step.x / dpiScale) + (windowPos?.x ?? 0)
+                        const sy = Math.round(step.y / dpiScale) + (windowPos?.y ?? 0)
                         await withTimeout(
                             clickAt(sx, sy),
                             STEP_ACTION_TIMEOUT,
@@ -279,6 +310,28 @@ async function runWorkflow(
                         )
                         sendEvent('success', { message: `Clicked at screen (${sx}, ${sy})` })
                     }
+                    break
+                }
+
+                case 'callWorkflow': {
+                    if (!(step as any).targetWorkflow) {
+                        sendEvent('error', { message: 'No target workflow specified' })
+                        break
+                    }
+                    const targetWfName = (step as any).targetWorkflow
+                    const targetWf = config.workflows.find((w: any) => w.name === targetWfName)
+                    if (!targetWf) {
+                        sendEvent('error', {
+                            message: `Target workflow "${targetWfName}" not found`,
+                        })
+                        break
+                    }
+                    sendEvent('success', { message: `Calling sub-workflow "${targetWfName}"` })
+                    await runWorkflow(targetWf, config, 0, runId)
+                    if (workflowAbort) break
+                    sendEvent('success', {
+                        message: `Returned from sub-workflow "${targetWfName}"`,
+                    })
                     break
                 }
 
@@ -321,8 +374,8 @@ async function runWorkflow(
                             matchedBbox: match.bbox,
                         })
                     } else {
-                        const sx = tx + match.windowX
-                        const sy = ty + match.windowY
+                        const sx = Math.round(tx / dpiScale) + match.windowX
+                        const sy = Math.round(ty / dpiScale) + match.windowY
                         await withTimeout(
                             clickAt(sx, sy),
                             STEP_ACTION_TIMEOUT,
@@ -484,10 +537,10 @@ async function runWorkflow(
                             message: `Swiped device (${step.x1},${step.y1}) → (${step.x2},${step.y2}) in ${step.duration || 0.3}s`,
                         })
                     } else {
-                        const sx1 = step.x1 + (windowPos?.x ?? 0)
-                        const sy1 = step.y1 + (windowPos?.y ?? 0)
-                        const sx2 = step.x2 + (windowPos?.x ?? 0)
-                        const sy2 = step.y2 + (windowPos?.y ?? 0)
+                        const sx1 = Math.round(step.x1 / dpiScale) + (windowPos?.x ?? 0)
+                        const sy1 = Math.round(step.y1 / dpiScale) + (windowPos?.y ?? 0)
+                        const sx2 = Math.round(step.x2 / dpiScale) + (windowPos?.x ?? 0)
+                        const sy2 = Math.round(step.y2 / dpiScale) + (windowPos?.y ?? 0)
                         await withTimeout(
                             drag(sx1, sy1, sx2, sy2),
                             STEP_ACTION_TIMEOUT,
@@ -714,25 +767,6 @@ function getDeviceResolution(adb: string): { width: number; height: number } {
     return { width: 0, height: 0 }
 }
 
-async function doClick(
-    config: SavedConfig,
-    x: number,
-    y: number,
-    windowPos?: { x: number; y: number },
-): Promise<void> {
-    if (config.useScrcpy) {
-        await adbTap(getAdbExe(config), x, y)
-    } else if (windowPos) {
-        await withTimeout(
-            clickAt(x + windowPos.x, y + windowPos.y),
-            STEP_ACTION_TIMEOUT,
-            `Click at (${x + windowPos.x}, ${y + windowPos.y})`,
-        )
-    } else {
-        await withTimeout(clickAt(x, y), STEP_ACTION_TIMEOUT, `Click at (${x}, ${y})`)
-    }
-}
-
 async function findTextOnScreen(
     config: SavedConfig,
     pattern: string,
@@ -849,7 +883,7 @@ async function waitForText(
     return null
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
     createWindow()
 
     ipcMain.handle('list-windows', () => listWindows())
@@ -920,6 +954,70 @@ app.whenReady().then(() => {
     ipcMain.handle('get-device-resolution', async (_e, adbExe?: string) =>
         getDeviceResolution(adbExe || 'adb'),
     )
+
+    ipcMain.handle('resize-window', async (_e, handle: number, width: number, height: number) => {
+        const psCommand = `
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+
+public struct RECT {
+  public int Left;
+  public int Top;
+  public int Right;
+  public int Bottom;
+}
+
+public class Win32 {
+  [DllImport("user32.dll")]
+  public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  public static extern uint GetDpiForWindow(IntPtr hwnd);
+
+  [DllImport("user32.dll")]
+  public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+  [DllImport("dwmapi.dll")]
+  public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
+}
+"@
+
+$handleVal = [IntPtr]${handle}
+$dpi = [Win32]::GetDpiForWindow($handleVal)
+if ($dpi -eq 0) { $dpi = 96 }
+$scale = $dpi / 96.0
+
+$rectOuter = New-Object RECT
+$rectVisible = New-Object RECT
+
+[Win32]::GetWindowRect($handleVal, [ref]$rectOuter)
+# 9 = DWMWA_EXTENDED_FRAME_BOUNDS
+[Win32]::DwmGetWindowAttribute($handleVal, 9, [ref]$rectVisible, 16)
+
+$outerW_logical = $rectOuter.Right - $rectOuter.Left
+$outerH_logical = $rectOuter.Bottom - $rectOuter.Top
+$visibleW_physical = $rectVisible.Right - $rectVisible.Left
+$visibleH_physical = $rectVisible.Bottom - $rectVisible.Top
+
+$visibleW_logical = $visibleW_physical / $scale
+$visibleH_logical = $visibleH_physical / $scale
+
+$padW_logical = $outerW_logical - $visibleW_logical
+$padH_logical = $outerH_logical - $visibleH_logical
+
+$logicalOuterW = [Math]::Round((${width} / $scale) + $padW_logical)
+$logicalOuterH = [Math]::Round((${height} / $scale) + $padH_logical)
+
+[Win32]::SetWindowPos($handleVal, [IntPtr]0, 0, 0, $logicalOuterW, $logicalOuterH, 0x0002 -bor 0x0004)
+`
+        try {
+            execFileSync('powershell', ['-Command', psCommand], { timeout: 5000 })
+            console.log(`[window] Resized window ${handle} to physical ${width}x${height}`)
+        } catch (e: any) {
+            console.error(`[window] Failed to resize window: ${e.message}`)
+        }
+    })
 
     ipcMain.handle('select-adb', async () => {
         const result = await dialog.showOpenDialog({

@@ -3,8 +3,6 @@ import {
     captureWindow,
     captureScreen,
     ocrImage,
-    clickAt,
-    typeText,
     Watcher,
     toScreenCoords,
 } from '../lib/index'

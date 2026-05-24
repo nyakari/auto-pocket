@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, watch, nextTick } from 'vue'
+    import { ref, watch } from 'vue'
 
     const props = defineProps<{ lines: Array<{ time: string; level: string; msg: string }> }>()
     const listRef = ref<HTMLDivElement | null>(null)
@@ -25,13 +25,39 @@
 
 <template>
     <div class="log-panel">
-        <h3>Log</h3>
+        <div class="terminal-header">
+            <div class="window-controls">
+                <span class="control-dot close"></span>
+                <span class="control-dot minimize"></span>
+                <span class="control-dot maximize"></span>
+            </div>
+            <span class="terminal-title">Developer Console</span>
+            <button v-if="lines.length > 0" class="clear-btn" @click="$emit('clear' as any)">
+                Clear
+            </button>
+        </div>
         <div ref="listRef" class="log-list">
             <div v-for="(line, i) in lines" :key="i" :class="['log-line', levelClass(line.level)]">
-                <span class="t">{{ line.time }}</span>
+                <span class="t">[{{ line.time }}]</span>
+                <span class="lvl">[{{ line.level.toUpperCase() }}]</span>
                 <span class="m">{{ line.msg }}</span>
             </div>
-            <div v-if="lines.length === 0" class="empty">No events yet</div>
+            <div v-if="lines.length === 0" class="empty">
+                <svg
+                    class="empty-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                >
+                    <path
+                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                    />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+                <span>Console idle. Waiting for events...</span>
+            </div>
         </div>
     </div>
 </template>
@@ -42,44 +68,152 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
+        background: #060608;
+        border-top: 1px solid var(--border-color);
     }
-    h3 {
-        font-size: 13px;
-        color: #e94560;
-        padding: 12px 12px 4px;
+
+    .terminal-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        background: #09090b;
+        border-bottom: 1px solid var(--border-color);
+        justify-content: space-between;
     }
+
+    .window-controls {
+        display: flex;
+        gap: 6px;
+    }
+
+    .control-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .control-dot.close {
+        background: #ef4444;
+    }
+    .control-dot.minimize {
+        background: #f59e0b;
+    }
+    .control-dot.maximize {
+        background: #10b981;
+    }
+
+    .terminal-title {
+        font-size: 11px;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .clear-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 10px;
+        font-family: var(--font-mono);
+        cursor: pointer;
+    }
+
+    .clear-btn:hover {
+        color: var(--text-secondary);
+    }
+
     .log-list {
         flex: 1;
-        overflow: auto;
-        padding: 4px 12px 12px;
-        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        overflow-y: auto;
+        padding: 12px;
+        font-family: var(--font-mono);
         font-size: 11px;
+        line-height: 1.5;
     }
+
+    /* Custom thin scrollbar for console */
+    .log-list::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .log-list::-webkit-scrollbar-track {
+        background: #060608;
+    }
+    .log-list::-webkit-scrollbar-thumb {
+        background: #1e1e24;
+        border-radius: 3px;
+    }
+    .log-list::-webkit-scrollbar-thumb:hover {
+        background: #2d2d38;
+    }
+
     .log-line {
-        padding: 2px 0;
+        padding: 4px 0;
         display: flex;
         gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.01);
+        align-items: flex-start;
+        word-break: break-all;
     }
+
     .log-line .t {
-        color: #4b5563;
-        white-space: nowrap;
+        color: var(--text-muted);
+        flex-shrink: 0;
     }
+
+    .log-line .lvl {
+        font-weight: 700;
+        flex-shrink: 0;
+        width: 50px;
+    }
+
     .log-line .m {
-        color: #d1d5db;
-        white-space: nowrap;
+        color: var(--text-primary);
+    }
+
+    /* Color styles for different levels */
+    .log-line.info .lvl {
+        color: var(--text-secondary);
+    }
+
+    .log-line.err .lvl {
+        color: var(--color-danger);
     }
     .log-line.err .m {
-        color: #ef5350;
+        color: #fca5a5;
+    }
+
+    .log-line.match .lvl {
+        color: var(--color-success);
     }
     .log-line.match .m {
-        color: #66bb6a;
+        color: #a7f3d0;
+    }
+
+    .log-line.warn .lvl {
+        color: var(--color-warning);
     }
     .log-line.warn .m {
-        color: #ffa726;
+        color: #fde68a;
     }
+
     .empty {
-        color: #333;
-        padding: 12px;
+        color: var(--text-muted);
+        padding: 32px 16px;
         text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        height: 100%;
+    }
+
+    .empty-icon {
+        width: 24px;
+        height: 24px;
+        color: #1e1e24;
     }
 </style>

@@ -29,6 +29,8 @@ export interface Workflow {
     name: string
     steps: WorkflowStep[]
     startIndex?: number
+    windowWidth?: number
+    windowHeight?: number
 }
 
 export interface WorkflowStepBase {
@@ -117,6 +119,11 @@ export interface WorkflowStepCaptureLine extends WorkflowStepBase {
     wholeWord?: boolean
 }
 
+export interface WorkflowStepCallWorkflow extends WorkflowStepBase {
+    type: 'callWorkflow'
+    targetWorkflow: string
+}
+
 export type WorkflowStep =
     | WorkflowStepClickXY
     | WorkflowStepClickText
@@ -129,6 +136,7 @@ export type WorkflowStep =
     | WorkflowStepSwipe
     | WorkflowStepCountText
     | WorkflowStepCaptureLine
+    | WorkflowStepCallWorkflow
 
 export interface WorkflowStepEvent {
     workflowName: string

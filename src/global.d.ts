@@ -31,10 +31,9 @@ interface Api {
     getDeviceResolution: (adbPath?: string) => Promise<{ width: number; height: number }>
     selectAdb: () => Promise<string | null>
     clearPersistentVars: () => Promise<void>
+    resizeWindow: (handle: number, width: number, height: number) => Promise<void>
 }
 
-declare global {
-    interface Window {
-        api: Api
-    }
+interface Window {
+    api: Api
 }
