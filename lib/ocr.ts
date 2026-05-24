@@ -1,66 +1,91 @@
-import { createWorker } from 'tesseract.js'
+import { writeFile, unlink } from 'fs/promises'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { randomUUID } from 'crypto'
+import { Jimp } from 'jimp'
+import { recognizeBatchFromPath } from 'node-windows-ocr'
+import type { OCRResult } from 'node-windows-ocr'
 import type { OcrResult, OcrOptions, WordBlock, LineBlock } from './types'
 
-let worker: Awaited<ReturnType<typeof createWorker>> | null = null
-let currentLang = 'eng'
+const TESSERACT_TO_BCP47: Record<string, string> = {
+    eng: 'en-US',
+    jpn: 'ja-JP',
+    kor: 'ko-KR',
+    chi_sim: 'zh-CN',
+    deu: 'de-DE',
+    fra: 'fr-FR',
+}
 
-async function getWorker(options?: OcrOptions) {
-    const lang = options?.lang || 'eng'
-    if (!worker) {
-        worker = await createWorker(lang)
-        currentLang = lang
-    } else if (lang !== currentLang) {
-        await worker.reinitialize(lang)
-        currentLang = lang
-    }
-    return worker
+function normalizeLang(lang: string): string {
+    return TESSERACT_TO_BCP47[lang] || lang
+}
+
+async function scaleImage(image: Buffer, scale: number): Promise<Buffer> {
+    if (scale <= 1) return image
+    const img = await Jimp.read(image)
+    img.resize({ w: img.bitmap.width * scale, h: img.bitmap.height * scale })
+    return img.getBuffer('image/png')
+}
+
+function toBBox(r: OCRResult['Result']['Lines'][0]['Words'][0]['BoundingRect']) {
+    return { x0: r.Left, y0: r.Top, x1: r.Right, y1: r.Bottom }
 }
 
 export async function ocrImage(image: Buffer, options?: OcrOptions): Promise<OcrResult> {
-    const w = await getWorker(options)
-    const { data } = await w.recognize(image, undefined, { blocks: true })
+    const scale = options?.scale || 1
+    const lang = normalizeLang(options?.lang || 'en-US')
+    const scaled = await scaleImage(image, scale)
 
-    const lines: LineBlock[] = []
-    const blocks: WordBlock[] = []
+    const tmpFile = join(tmpdir(), `auto-pocket-ocr-${randomUUID()}.png`)
+    await writeFile(tmpFile, scaled)
 
-    if (data.blocks) {
-        for (const block of data.blocks) {
-            for (const para of block.paragraphs) {
-                for (const line of para.lines) {
-                    const trimmed = line.text.trim()
-                    if (trimmed.length > 0) {
-                        lines.push({
-                            text: trimmed,
-                            bbox: line.bbox,
-                            confidence: line.confidence,
-                        })
-                    }
-                    for (const word of line.words) {
-                        const wt = word.text.trim()
-                        if (wt.length > 0) {
-                            blocks.push({
-                                text: wt,
-                                bbox: word.bbox,
-                                confidence: word.confidence,
-                            })
-                        }
-                    }
-                }
+    try {
+        const [raw] = await recognizeBatchFromPath([tmpFile], { language: lang })
+
+        const lines: LineBlock[] = []
+        const blocks: WordBlock[] = []
+
+        for (const line of raw.Result.Lines) {
+            const lineText = line.Text.trim()
+            if (!lineText) continue
+
+            const words: WordBlock[] = []
+            let x0 = Infinity,
+                y0 = Infinity,
+                x1 = -Infinity,
+                y1 = -Infinity
+
+            for (const word of line.Words) {
+                const wt = word.Text.trim()
+                if (!wt) continue
+                const b = toBBox(word.BoundingRect)
+                words.push({ text: wt, bbox: b, confidence: 1.0 })
+                if (b.x0 < x0) x0 = b.x0
+                if (b.y0 < y0) y0 = b.y0
+                if (b.x1 > x1) x1 = b.x1
+                if (b.y1 > y1) y1 = b.y1
+            }
+
+            blocks.push(...words)
+
+            if (words.length > 0) {
+                lines.push({
+                    text: lineText,
+                    bbox: { x0, y0, x1, y1 },
+                    confidence: 1.0,
+                })
             }
         }
-    }
 
-    return {
-        text: data.text.trim(),
-        confidence: data.confidence,
-        blocks,
-        lines,
+        return {
+            text: raw.Result.Text.trim(),
+            confidence: 1.0,
+            blocks,
+            lines,
+        }
+    } finally {
+        unlink(tmpFile).catch(() => {})
     }
 }
 
-export async function terminateOcr(): Promise<void> {
-    if (worker) {
-        await worker.terminate()
-        worker = null
-    }
-}
+export async function terminateOcr(): Promise<void> {}

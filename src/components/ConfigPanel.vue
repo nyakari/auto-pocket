@@ -23,13 +23,71 @@
         <section>
             <label>OCR Language</label>
             <select v-model="ocrLang" :disabled="watcherRunning">
-                <option value="eng">English</option>
-                <option value="jpn">Japanese</option>
-                <option value="kor">Korean</option>
-                <option value="chi_sim">Chinese (Simplified)</option>
-                <option value="deu">German</option>
-                <option value="fra">French</option>
+                <option value="en-US">English</option>
+                <option value="ja-JP">Japanese</option>
+                <option value="ko-KR">Korean</option>
+                <option value="zh-CN">Chinese (Simplified)</option>
+                <option value="de-DE">German</option>
+                <option value="fr-FR">French</option>
             </select>
+        </section>
+        <section>
+            <label>OCR Scale (higher = better accuracy, slower)</label>
+            <select v-model.number="ocrScale" :disabled="watcherRunning">
+                <option :value="1">1x</option>
+                <option :value="2">2x</option>
+                <option :value="3">3x</option>
+            </select>
+        </section>
+
+        <section>
+            <label>Default Step Wait (ms)</label>
+            <input
+                v-model.number="defaultWaitMs"
+                type="number"
+                min="0"
+                step="100"
+                :disabled="watcherRunning"
+            />
+        </section>
+
+        <section>
+            <div class="section-header">
+                <label>Action Mode</label>
+            </div>
+            <div class="radio-group">
+                <label class="radio-label" :class="{ active: !useScrcpy }">
+                    <input
+                        type="radio"
+                        v-model="useScrcpy"
+                        :value="false"
+                        :disabled="watcherRunning"
+                    />
+                    Mouse clicks
+                </label>
+                <label class="radio-label" :class="{ active: useScrcpy }">
+                    <input
+                        type="radio"
+                        v-model="useScrcpy"
+                        :value="true"
+                        :disabled="watcherRunning"
+                    />
+                    scrcpy / ADB taps
+                </label>
+            </div>
+            <div v-if="useScrcpy" style="margin-top: 6px">
+                <label>ADB Executable</label>
+                <div class="adb-row">
+                    <input
+                        v-model="adbPath"
+                        placeholder="e.g. C:\platform-tools\adb.exe"
+                        :disabled="watcherRunning"
+                    />
+                    <button class="small" @click="browseAdb" :disabled="watcherRunning">
+                        Browse
+                    </button>
+                </div>
+            </div>
         </section>
 
         <section>
@@ -83,9 +141,18 @@
 
     const targetWindowTitle = ref('')
     const pollInterval = ref(2000)
-    const ocrLang = ref('eng')
+    const ocrLang = ref('en-US')
+    const ocrScale = ref(1)
+    const defaultWaitMs = ref(500)
+    const useScrcpy = ref(false)
+    const adbPath = ref('adb')
     const rules = ref<Array<{ name: string; when: string; action: string; actionText: string }>>([])
     const watcherRunning = ref(false)
+
+    async function browseAdb() {
+        const result = await window.api.selectAdb()
+        if (result) adbPath.value = result
+    }
 
     function addRule() {
         rules.value.push({ name: '', when: '', action: 'click', actionText: '' })
@@ -96,11 +163,18 @@
     }
 
     async function save() {
+        const existing = await window.api.loadConfig()
         await window.api.saveConfig({
             targetWindowTitle: targetWindowTitle.value,
             pollInterval: pollInterval.value,
             ocrLang: ocrLang.value,
+            ocrScale: ocrScale.value,
+            defaultWaitMs: defaultWaitMs.value,
+            useScrcpy: useScrcpy.value,
+            adbPath: adbPath.value,
+            deviceResolution: existing.deviceResolution || { width: 0, height: 0 },
             rules: toRaw(rules.value),
+            workflows: existing.workflows || [],
         })
         emit('log', 'info', 'Config saved')
     }
@@ -111,7 +185,13 @@
             targetWindowTitle: targetWindowTitle.value,
             pollInterval: pollInterval.value,
             ocrLang: ocrLang.value,
+            ocrScale: ocrScale.value,
+            defaultWaitMs: defaultWaitMs.value,
+            useScrcpy: useScrcpy.value,
+            adbPath: adbPath.value,
+            deviceResolution: { width: 0, height: 0 },
             rules: toRaw(rules.value),
+            workflows: [],
         })
         watcherRunning.value = true
         emit('log', 'info', 'Watcher started')
@@ -127,7 +207,11 @@
         const c = await window.api.loadConfig()
         targetWindowTitle.value = c.targetWindowTitle || ''
         pollInterval.value = c.pollInterval || 2000
-        ocrLang.value = c.ocrLang || 'eng'
+        ocrLang.value = c.ocrLang || 'en-US'
+        ocrScale.value = c.ocrScale || 1
+        defaultWaitMs.value = c.defaultWaitMs || 500
+        useScrcpy.value = c.useScrcpy ?? false
+        adbPath.value = c.adbPath || 'adb'
         rules.value = c.rules || []
         const status = await window.api.getWatcherStatus()
         watcherRunning.value = status.running
@@ -252,5 +336,38 @@
     }
     .stop {
         background: #c62828;
+    }
+    .radio-group {
+        display: flex;
+        gap: 8px;
+    }
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #888;
+        cursor: pointer;
+        padding: 6px 12px;
+        border: 1px solid #0f3460;
+        border-radius: 4px;
+        background: #16213e;
+    }
+    .radio-label.active {
+        color: #e0e0e0;
+        border-color: #e94560;
+    }
+    .radio-label input {
+        display: none;
+    }
+    .adb-row {
+        display: flex;
+        gap: 6px;
+    }
+    .adb-row input {
+        flex: 1;
+    }
+    .adb-row button {
+        flex-shrink: 0;
     }
 </style>

@@ -8,6 +8,7 @@ export {
     releaseKey,
     moveMouse,
     getCursorPos,
+    drag,
     Button,
     Key,
 } from './actions'

@@ -6,12 +6,13 @@
 
     watch(
         () => props.lines.length,
-        async () => {
-            await nextTick()
-            if (listRef.value) {
-                listRef.value.scrollTop = listRef.value.scrollHeight
+        () => {
+            const el = listRef.value
+            if (el) {
+                el.scrollTop = el.scrollHeight
             }
         },
+        { flush: 'post' },
     )
 
     function levelClass(l: string) {
@@ -40,6 +41,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
+        min-height: 0;
     }
     h3 {
         font-size: 13px;
@@ -48,7 +50,7 @@
     }
     .log-list {
         flex: 1;
-        overflow-y: auto;
+        overflow: auto;
         padding: 4px 12px 12px;
         font-family: 'Cascadia Code', 'Fira Code', monospace;
         font-size: 11px;
@@ -66,8 +68,6 @@
     .log-line .m {
         color: #ccc;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
     .log-line.err .m {
         color: #ef5350;

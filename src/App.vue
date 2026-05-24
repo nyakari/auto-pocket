@@ -9,6 +9,12 @@
                 <button :class="{ active: activeTab === 'config' }" @click="activeTab = 'config'">
                     Config
                 </button>
+                <button
+                    :class="{ active: activeTab === 'workflow' }"
+                    @click="activeTab = 'workflow'"
+                >
+                    Workflow
+                </button>
             </nav>
             <span class="status" :class="{ running: watcherRunning }">
                 {{ watcherRunning ? 'Watcher ON' : 'Watcher OFF' }}
@@ -16,11 +22,12 @@
         </header>
         <div class="body">
             <aside>
-                <WindowSelector @log="addLog" />
+                <WindowSelector v-if="activeTab !== 'workflow'" @log="addLog" />
                 <ActionLog :lines="logLines" />
             </aside>
             <main>
                 <OcrViewer v-if="activeTab === 'viewer'" @log="addLog" />
+                <WorkflowEditor v-else-if="activeTab === 'workflow'" @log="addLog" />
                 <ConfigPanel v-else @log="addLog" />
             </main>
         </div>
@@ -33,8 +40,9 @@
     import OcrViewer from './components/OcrViewer.vue'
     import ActionLog from './components/ActionLog.vue'
     import ConfigPanel from './components/ConfigPanel.vue'
+    import WorkflowEditor from './components/WorkflowEditor.vue'
 
-    const activeTab = ref<'viewer' | 'config'>('viewer')
+    const activeTab = ref<'viewer' | 'config' | 'workflow'>('viewer')
     const logLines = ref<Array<{ time: string; level: string; msg: string }>>([])
     const watcherRunning = ref(false)
 
@@ -127,11 +135,12 @@
         overflow: hidden;
     }
     aside {
-        width: 320px;
-        min-width: 320px;
+        width: 600px;
+        min-width: 600px;
         display: flex;
         flex-direction: column;
         border-right: 1px solid #0f3460;
+        min-height: 0;
     }
     main {
         flex: 1;

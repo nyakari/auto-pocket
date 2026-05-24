@@ -26,9 +26,14 @@
         "prepare": "vp config"
     },
     "dependencies": {
+        "@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
+        "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^2.1.5",
+        "@atlaskit/pragmatic-drag-and-drop-flourish": "^2.0.15",
+        "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
         "@nut-tree-fork/nut-js": "^4.2.6",
+        "jimp": "^1.6.1",
         "node-screenshots": "^0.2.8",
-        "tesseract.js": "^7.0.0"
+        "node-windows-ocr": "^1.1.1"
     },
     "devDependencies": {
         "@types/node": "^25.9.1",

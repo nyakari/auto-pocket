@@ -1,7 +1,6 @@
 allowBuilds:
     electron-winstaller: true
     esbuild: true
-    tesseract.js: true
 catalog:
     vite: npm:@voidzero-dev/vite-plus-core@latest
     vitest: npm:@voidzero-dev/vite-plus-test@latest

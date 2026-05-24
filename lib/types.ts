@@ -42,6 +42,7 @@ export interface OcrResult {
 
 export interface OcrOptions {
     lang?: string
+    scale?: number
 }
 
 export type MouseButton = 'left' | 'right' | 'middle'
