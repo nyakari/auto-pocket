@@ -11,6 +11,12 @@ export type StepType =
     | 'countText'
     | 'captureLine'
     | 'callWorkflow'
+    | 'pressKey'
+    | 'captureImage'
+    | 'hoverXY'
+    | 'hoverText'
+    | 'mathVar'
+    | 'repeat'
 
 export interface Step {
     id: string
@@ -36,11 +42,22 @@ export interface Step {
     matchN?: number
     matchIndex?: number
     wholeWord?: boolean
+    useRegex?: boolean
+    clickType?: 'left' | 'right' | 'double'
+    onError?: 'stop' | 'ignore' | 'goto'
+    onErrorStepId?: string
+    onErrorStep?: number
     varName?: string
     varValue?: string
     persist?: boolean
     duration?: number
     targetWorkflow?: string
+    key?: string
+    modifiers?: string[]
+    folderPath?: string
+    fileName?: string
+    expression?: string
+    repeatCount?: number
 }
 
 export interface SavedWorkflow {
@@ -80,8 +97,11 @@ export function resolveStepIndex(
 
 export function stepSummary(step: Step, steps: Step[], useScrcpy: boolean = false): string {
     switch (step.type) {
-        case 'clickXY':
-            return `Click at (${step.x ?? '?'}, ${step.y ?? '?'})`
+        case 'clickXY': {
+            const btn =
+                step.clickType && step.clickType !== 'left' ? ` (${step.clickType} click)` : ''
+            return `Click at (${step.x ?? '?'}, ${step.y ?? '?'})${btn}`
+        }
         case 'clickText': {
             const m =
                 step.matchMode === 'last'
@@ -89,10 +109,15 @@ export function stepSummary(step: Step, steps: Step[], useScrcpy: boolean = fals
                     : step.matchMode === 'nth'
                       ? `#${step.matchN ?? 1}`
                       : 'first'
-            return `${useScrcpy ? 'Tap' : 'Click'} text: "${step.when || '?'}" (${m} match${step.wholeWord ? ', whole word' : ''}, timeout: ${step.timeoutMs || 5}s)`
+            const ww = step.wholeWord ? ', whole word' : step.useRegex ? ', regex' : ''
+            const btn =
+                step.clickType && step.clickType !== 'left' ? ` (${step.clickType} click)` : ''
+            return `${useScrcpy ? 'Tap' : 'Click'} text: "${step.when || '?'}" (${m} match${ww}, timeout: ${step.timeoutMs || 5}s)${btn}`
         }
-        case 'waitText':
-            return `Wait for: "${step.when || '?'}" (timeout: ${step.timeoutMs || 10}s)`
+        case 'waitText': {
+            const ww = step.wholeWord ? ' (whole word)' : step.useRegex ? ' (regex)' : ''
+            return `Wait for: "${step.when || '?'}"${ww} (timeout: ${step.timeoutMs || 10}s)`
+        }
         case 'wait':
             return `Wait ${step.durationMs || 1}s`
         case 'goto': {
@@ -121,7 +146,7 @@ export function stepSummary(step: Step, steps: Step[], useScrcpy: boolean = fals
             if (step.elseStepId === '') elseLabel = 'continue'
             if (!step.elseStepId && (step.elseStep === 0 || step.elseStep === undefined))
                 elseLabel = 'continue'
-            const ww = step.wholeWord ? ', whole word' : ''
+            const ww = step.wholeWord ? ', whole word' : step.useRegex ? ', regex' : ''
             return `If "${step.when || '?'}" → ${thenLabel}, else → ${elseLabel} (timeout: ${step.timeoutMs || 5}s${ww})`
         }
         case 'setVar':
@@ -146,8 +171,10 @@ export function stepSummary(step: Step, steps: Step[], useScrcpy: boolean = fals
         }
         case 'swipe':
             return `Swipe (${step.x1 ?? 0},${step.y1 ?? 0}) → (${step.x2 ?? 0},${step.y2 ?? 0}) (${step.duration ?? 0.3}s)`
-        case 'countText':
-            return `Count "${step.when || '?'}" → var "${step.varName || '?'}"`
+        case 'countText': {
+            const ww = step.wholeWord ? ' (whole word)' : step.useRegex ? ' (regex)' : ''
+            return `Count "${step.when || '?'}"${ww} → var "${step.varName || '?'}"`
+        }
         case 'captureLine': {
             const m =
                 step.matchMode === 'last'
@@ -155,10 +182,34 @@ export function stepSummary(step: Step, steps: Step[], useScrcpy: boolean = fals
                     : step.matchMode === 'nth'
                       ? `#${step.matchN ?? 1}`
                       : 'first'
-            return `Capture "${step.when || '?'}" (${m} match${step.wholeWord ? ', whole word' : ''}) → var "${step.varName || '?'}"${step.persist ? ' [persistent]' : ''}`
+            const ww = step.wholeWord ? ', whole word' : step.useRegex ? ', regex' : ''
+            return `Capture "${step.when || '?'}" (${m} match${ww}) → var "${step.varName || '?'}"${step.persist ? ' [persistent]' : ''}`
         }
         case 'callWorkflow':
             return `Call sub-workflow: "${step.targetWorkflow || '?'}"`
+        case 'pressKey': {
+            const mods =
+                step.modifiers && step.modifiers.length ? step.modifiers.join('+') + '+' : ''
+            return `Press Key: ${mods}${step.key || 'Enter'}`
+        }
+        case 'captureImage':
+            return `Save Screenshot: "${step.fileName || 'screenshot'}" to ${step.folderPath ? step.folderPath : 'Downloads'}`
+        case 'hoverXY':
+            return `Hover at (${step.x ?? '?'}, ${step.y ?? '?'})`
+        case 'hoverText': {
+            const ww = step.wholeWord ? ' (whole word)' : step.useRegex ? ' (regex)' : ''
+            return `Hover on text: "${step.when || '?'}"${ww}`
+        }
+        case 'mathVar':
+            return `Math: "${step.varName || '?'}" = ${step.expression || '?'}${step.persist ? ' [persistent]' : ''}`
+        case 'repeat': {
+            const idx = resolveStepIndex(steps, step.targetStepId, step.targetStep)
+            const label =
+                idx >= 0 && steps[idx]
+                    ? getStepLabel(steps[idx], idx)
+                    : `step ${step.targetStep ?? '?'}`
+            return `Repeat: Loop back to ${label} (${step.repeatCount || 5} times)`
+        }
     }
     return ''
 }
@@ -187,13 +238,29 @@ export function resetStepFields(step: Step) {
     delete step.y2
     delete step.duration
     delete step.targetWorkflow
+    delete step.clickType
+    delete step.useRegex
+    delete step.onError
+    delete step.onErrorStepId
+    delete step.onErrorStep
+    delete step.key
+    delete step.modifiers
+    delete step.folderPath
+    delete step.fileName
+    delete step.expression
+    delete step.repeatCount
 }
 
 export function setStepDefaults(step: Step, steps: Step[]) {
+    step.onError = 'stop'
+    step.onErrorStepId = ''
+    step.onErrorStep = 0
+
     switch (step.type) {
         case 'clickXY':
             step.x = 0
             step.y = 0
+            step.clickType = 'left'
             break
         case 'clickText':
             step.when = ''
@@ -201,10 +268,13 @@ export function setStepDefaults(step: Step, steps: Step[]) {
             step.matchMode = 'first'
             step.matchN = 1
             step.wholeWord = false
+            step.useRegex = false
+            step.clickType = 'left'
             break
         case 'waitText':
             step.when = ''
             step.timeoutMs = 10
+            step.useRegex = false
             break
         case 'wait':
             step.durationMs = 1
@@ -229,6 +299,7 @@ export function setStepDefaults(step: Step, steps: Step[]) {
             step.elseStep = 0
             step.timeoutMs = 5
             step.wholeWord = false
+            step.useRegex = false
             break
         case 'setVar':
             step.varName = ''
@@ -258,6 +329,7 @@ export function setStepDefaults(step: Step, steps: Step[]) {
             step.when = ''
             step.varName = ''
             step.timeoutMs = 5
+            step.useRegex = false
             break
         case 'captureLine':
             step.when = ''
@@ -267,9 +339,44 @@ export function setStepDefaults(step: Step, steps: Step[]) {
             step.matchN = 1
             step.persist = false
             step.wholeWord = false
+            step.useRegex = false
             break
         case 'callWorkflow':
             step.targetWorkflow = ''
+            break
+        case 'pressKey':
+            step.key = 'Enter'
+            step.modifiers = []
+            break
+        case 'captureImage':
+            step.folderPath = ''
+            step.fileName = 'screenshot_${timestamp}'
+            break
+        case 'hoverXY':
+            step.x = 0
+            step.y = 0
+            break
+        case 'hoverText':
+            step.when = ''
+            step.timeoutMs = 5
+            step.matchMode = 'first'
+            step.matchN = 1
+            step.wholeWord = false
+            step.useRegex = false
+            break
+        case 'mathVar':
+            step.varName = 'counter'
+            step.expression = 'counter + 1'
+            step.persist = false
+            break
+        case 'repeat':
+            if (steps.length > 0) {
+                step.targetStepId = steps[0].id
+                step.targetStep = 1
+            } else {
+                step.targetStep = 1
+            }
+            step.repeatCount = 5
             break
     }
 }

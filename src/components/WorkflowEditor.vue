@@ -44,6 +44,29 @@
                         >
                             ➕
                         </button>
+                        <button
+                            class="btn-wf-action"
+                            @click="exportWorkflow"
+                            :disabled="!steps.length"
+                            title="Export Workflow"
+                        >
+                            📤
+                        </button>
+                        <button
+                            class="btn-wf-action"
+                            @click="triggerImportClick"
+                            :disabled="running"
+                            title="Import Workflow"
+                        >
+                            📥
+                        </button>
+                        <input
+                            type="file"
+                            ref="importFileRef"
+                            accept=".json"
+                            style="display: none"
+                            @change="onImportFileChange"
+                        />
                     </div>
 
                     <div class="actions-row">
@@ -218,6 +241,7 @@
     const screenshotWindow = ref<any>(null)
     const captureWidth = ref(0)
     const captureHeight = ref(0)
+    const importFileRef = ref<HTMLInputElement | null>(null)
     const isConsoleCollapsed = ref(true)
     const rightTab = ref<'screenshot' | 'ocr'>('screenshot')
     const selectedWfName = ref('')
@@ -540,6 +564,81 @@
         emit('log', 'info', 'Created new empty workflow')
     }
 
+    function triggerImportClick() {
+        if (importFileRef.value) {
+            importFileRef.value.value = ''
+            importFileRef.value.click()
+        }
+    }
+
+    function onImportFileChange(e: Event) {
+        const target = e.target as HTMLInputElement
+        if (!target.files || target.files.length === 0) return
+        const file = target.files[0]
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            try {
+                const raw = event.target?.result as string
+                const parsed = JSON.parse(raw)
+                if (!parsed.name || !Array.isArray(parsed.steps)) {
+                    throw new Error('Invalid workflow JSON structure')
+                }
+                const idMap = new Map<string, string>()
+                const newSteps = parsed.steps.map((s: any) => {
+                    const newId = crypto.randomUUID
+                        ? crypto.randomUUID()
+                        : Math.random().toString(36).slice(2)
+                    idMap.set(s.id, newId)
+                    return { ...s, id: newId }
+                })
+                newSteps.forEach((s: any) => {
+                    if (s.targetStepId && idMap.has(s.targetStepId)) {
+                        s.targetStepId = idMap.get(s.targetStepId)
+                    }
+                    if (s.thenStepId && idMap.has(s.thenStepId)) {
+                        s.thenStepId = idMap.get(s.thenStepId)
+                    }
+                    if (s.elseStepId && idMap.has(s.elseStepId)) {
+                        s.elseStepId = idMap.get(s.elseStepId)
+                    }
+                    if (s.onErrorStepId && idMap.has(s.onErrorStepId)) {
+                        s.onErrorStepId = idMap.get(s.onErrorStepId)
+                    }
+                })
+                workflowName.value = parsed.name + ' (Imported)'
+                steps.value = newSteps
+                selectedStepIdx.value = null
+                loadedWfDimensions.value =
+                    parsed.windowWidth && parsed.windowHeight
+                        ? { width: parsed.windowWidth, height: parsed.windowHeight }
+                        : null
+                emit('log', 'info', `Imported workflow "${parsed.name}" successfully`)
+            } catch (err: any) {
+                emit('log', 'error', `Failed to import workflow: ${err.message}`)
+            }
+        }
+        reader.readAsText(file)
+    }
+
+    function exportWorkflow() {
+        if (!steps.value.length) return
+        const wf = {
+            name: workflowName.value.trim() || 'export_workflow',
+            steps: steps.value,
+            windowWidth: captureWidth.value || undefined,
+            windowHeight: captureHeight.value || undefined,
+        }
+        const dataStr =
+            'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(wf, null, 2))
+        const downloadAnchor = document.createElement('a')
+        downloadAnchor.setAttribute('href', dataStr)
+        downloadAnchor.setAttribute('download', `${wf.name.replace(/\s+/g, '_')}.json`)
+        document.body.appendChild(downloadAnchor)
+        downloadAnchor.click()
+        downloadAnchor.remove()
+        emit('log', 'info', `Exported workflow "${wf.name}"`)
+    }
+
     async function saveWorkflow() {
         if (!workflowName.value.trim()) {
             emit('log', 'warn', 'Enter a workflow name before saving')
@@ -645,6 +744,23 @@
                         step.elseStep = elseIdx >= 0 ? elseIdx + 1 : (step.elseStep ?? 0)
                     }
                 }
+                if (step.type === 'repeat') {
+                    const targetIdx = resolveStepIndex(
+                        currentSteps,
+                        step.targetStepId,
+                        step.targetStep,
+                    )
+                    step.targetStep = targetIdx >= 0 ? targetIdx + 1 : (step.targetStep ?? 1)
+                }
+                // Resolve onError recovery step ID -> numeric index
+                if (step.onError === 'goto' && step.onErrorStepId) {
+                    const errIdx = resolveStepIndex(
+                        currentSteps,
+                        step.onErrorStepId,
+                        step.onErrorStep,
+                    )
+                    step.onErrorStep = errIdx >= 0 ? errIdx + 1 : (step.onErrorStep ?? 1)
+                }
                 if (step.type === 'clickText' || step.type === 'captureLine') {
                     if (step.matchMode === 'last') step.matchIndex = -1
                     else if (step.matchMode === 'nth') {
@@ -656,6 +772,17 @@
                             `  matchMode=nth, matchN=${mn} → matchIndex=${step.matchIndex}`,
                         )
                     } else step.matchIndex = 0
+                }
+                if (step.type === 'hoverText') {
+                    if (step.matchMode === 'last') step.matchIndex = -1
+                    else if (step.matchMode === 'nth') {
+                        const mn = step.matchN ?? 1
+                        step.matchIndex = mn >= 1 ? mn - 1 : mn
+                    } else step.matchIndex = 0
+                }
+                if (scaleAdb && step.type === 'hoverXY' && step.x != null && step.y != null) {
+                    step.x = Math.round(step.x * (dw / captureWidth.value))
+                    step.y = Math.round(step.y * (dh / captureHeight.value))
                 }
                 return step
             }),

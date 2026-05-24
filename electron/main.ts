@@ -7,9 +7,13 @@ import {
     captureWindow,
     ocrImage,
     clickAt,
+    doubleClickAt,
     typeText,
     findWindowsByTitle,
     drag,
+    pressKey,
+    releaseKey,
+    moveMouse,
 } from '../dist/index'
 import type {
     SavedConfig,
@@ -19,12 +23,79 @@ import type {
     WorkflowProgress,
 } from './types'
 import type { LineBlock } from '../dist/index'
+import { Key } from '@nut-tree-fork/nut-js'
 
 let mainWindow: BrowserWindow | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let lastConfig: SavedConfig | null = null
 let workflowAbort: boolean = false
 const workflowVars: Map<string, string> = new Map()
+
+function getNutKey(k: string): any {
+    const map: Record<string, any> = {
+        Enter: Key.Enter,
+        Escape: Key.Escape,
+        Tab: Key.Tab,
+        Backspace: Key.Backspace,
+        Space: Key.Space,
+        ArrowUp: Key.Up,
+        ArrowDown: Key.Down,
+        ArrowLeft: Key.Left,
+        ArrowRight: Key.Right,
+        Home: Key.Home,
+        End: Key.End,
+        PageUp: Key.PageUp,
+        PageDown: Key.PageDown,
+        Delete: Key.Delete,
+        Insert: Key.Insert,
+        ctrl: Key.LeftControl,
+        alt: Key.LeftAlt,
+        shift: Key.LeftShift,
+        win: Key.LeftSuper,
+    }
+    if (k && k.length === 1) {
+        const char = k.toUpperCase()
+        const keyName = `V` + char
+        if ((Key as any)[keyName] !== undefined) {
+            return (Key as any)[keyName]
+        }
+    }
+    return map[k] || (Key as any)[k]
+}
+
+function evaluateMathExpression(expr: string, vars: Map<string, string>): number {
+    let substituted = expr.replace(/(\w+)/g, (match) => {
+        if (vars.has(match)) {
+            return vars.get(match) || '0'
+        }
+        return match
+    })
+    substituted = substituted.replace(/\$\{(\w+)\}/g, (_, name) => {
+        return vars.get(name) || '0'
+    })
+    const clean = substituted.replace(/\s+/g, '')
+    const match = clean.match(/^([+-]?\d+(?:\.\d+)?)(?:([+\-*/])([+-]?\d+(?:\.\d+)?))?$/)
+    if (match) {
+        const num1 = parseFloat(match[1])
+        const op = match[2]
+        const num2 = match[3] ? parseFloat(match[3]) : null
+
+        if (op && num2 !== null) {
+            switch (op) {
+                case '+':
+                    return num1 + num2
+                case '-':
+                    return num1 - num2
+                case '*':
+                    return num1 * num2
+                case '/':
+                    return num2 !== 0 ? num1 / num2 : 0
+            }
+        }
+        return num1
+    }
+    return 0
+}
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev')
 
@@ -158,7 +229,15 @@ function createWindow(): void {
     })
 }
 
-function matchLine(lines: LineBlock[], pattern: string): LineBlock[] {
+function matchLine(lines: LineBlock[], pattern: string, useRegex?: boolean): LineBlock[] {
+    if (useRegex) {
+        try {
+            const re = new RegExp(pattern, 'i')
+            return lines.filter((l) => re.test(l.text))
+        } catch {
+            return []
+        }
+    }
     const lower = pattern.toLowerCase()
     return lines.filter((l) => l.text.toLowerCase().includes(lower))
 }
@@ -183,7 +262,7 @@ async function pollCycle(config: SavedConfig): Promise<void> {
 
         for (const rule of config.rules || []) {
             if (!rule.when) continue
-            const matched = matchLine(ocr.lines, rule.when)
+            const matched = matchLine(ocr.lines, rule.when, rule.useRegex)
             if (matched.length === 0) continue
 
             send('watcher:match', {
@@ -250,6 +329,7 @@ async function runWorkflow(
 ): Promise<void> {
     workflowAbort = false
     workflowVars.clear()
+    const repeatCounters: Map<string, number> = new Map()
 
     // Load persistent variables from disk so they survive across runs
     const persistentVars = loadPersistentVars()
@@ -298,17 +378,48 @@ async function runWorkflow(
                 case 'clickXY': {
                     const adb = getAdbExe(config)
                     if (config.useScrcpy) {
-                        await adbTap(adb, step.x, step.y)
-                        sendEvent('success', { message: `Tapped device at (${step.x}, ${step.y})` })
+                        if (step.clickType === 'double') {
+                            await adbTap(adb, step.x, step.y)
+                            await sleep(150)
+                            await adbTap(adb, step.x, step.y)
+                            sendEvent('success', {
+                                message: `Double-tapped device at (${step.x}, ${step.y})`,
+                            })
+                        } else {
+                            await adbTap(adb, step.x, step.y)
+                            sendEvent('success', {
+                                message: `Tapped device at (${step.x}, ${step.y})`,
+                            })
+                        }
                     } else {
                         const sx = Math.round(step.x / dpiScale) + (windowPos?.x ?? 0)
                         const sy = Math.round(step.y / dpiScale) + (windowPos?.y ?? 0)
-                        await withTimeout(
-                            clickAt(sx, sy),
-                            STEP_ACTION_TIMEOUT,
-                            `Click at (${sx}, ${sy})`,
-                        )
-                        sendEvent('success', { message: `Clicked at screen (${sx}, ${sy})` })
+                        const clickBtn =
+                            step.clickType === 'right'
+                                ? 'right'
+                                : step.clickType === 'middle'
+                                  ? 'middle'
+                                  : 'left'
+
+                        if (step.clickType === 'double') {
+                            await withTimeout(
+                                doubleClickAt(sx, sy, 'left'),
+                                STEP_ACTION_TIMEOUT,
+                                `Double click at (${sx}, ${sy})`,
+                            )
+                            sendEvent('success', {
+                                message: `Double-clicked at screen (${sx}, ${sy})`,
+                            })
+                        } else {
+                            await withTimeout(
+                                clickAt(sx, sy, clickBtn),
+                                STEP_ACTION_TIMEOUT,
+                                `${clickBtn === 'right' ? 'Right clicked' : 'Clicked'} at (${sx}, ${sy})`,
+                            )
+                            sendEvent('success', {
+                                message: `${clickBtn === 'right' ? 'Right-clicked' : 'Clicked'} at screen (${sx}, ${sy})`,
+                            })
+                        }
                     }
                     break
                 }
@@ -346,6 +457,7 @@ async function runWorkflow(
                         step.timeoutMs || 5000,
                         step.matchIndex ?? 0,
                         step.wholeWord ?? false,
+                        step.useRegex ?? false,
                         i,
                         workflow.name,
                         runId,
@@ -367,25 +479,56 @@ async function runWorkflow(
                             tx = Math.round(tx * (dw / match.captureWidth))
                             ty = Math.round(ty * (dh / match.captureHeight))
                         }
-                        await adbTap(adb, tx, ty)
-                        sendEvent('success', {
-                            message: `Tapped "${match.text}" at device (${tx}, ${ty})`,
-                            matchedText: match.text,
-                            matchedBbox: match.bbox,
-                        })
+                        if (step.clickType === 'double') {
+                            await adbTap(adb, tx, ty)
+                            await sleep(150)
+                            await adbTap(adb, tx, ty)
+                            sendEvent('success', {
+                                message: `Double-tapped "${match.text}" at device (${tx}, ${ty})`,
+                                matchedText: match.text,
+                                matchedBbox: match.bbox,
+                            })
+                        } else {
+                            await adbTap(adb, tx, ty)
+                            sendEvent('success', {
+                                message: `Tapped "${match.text}" at device (${tx}, ${ty})`,
+                                matchedText: match.text,
+                                matchedBbox: match.bbox,
+                            })
+                        }
                     } else {
                         const sx = Math.round(tx / dpiScale) + match.windowX
                         const sy = Math.round(ty / dpiScale) + match.windowY
-                        await withTimeout(
-                            clickAt(sx, sy),
-                            STEP_ACTION_TIMEOUT,
-                            `Click "${match.text}" at (${sx}, ${sy})`,
-                        )
-                        sendEvent('success', {
-                            message: `Clicked "${match.text}" at screen (${sx}, ${sy})`,
-                            matchedText: match.text,
-                            matchedBbox: match.bbox,
-                        })
+                        const clickBtn =
+                            step.clickType === 'right'
+                                ? 'right'
+                                : step.clickType === 'middle'
+                                  ? 'middle'
+                                  : 'left'
+
+                        if (step.clickType === 'double') {
+                            await withTimeout(
+                                doubleClickAt(sx, sy, 'left'),
+                                STEP_ACTION_TIMEOUT,
+                                `Double click "${match.text}" at (${sx}, ${sy})`,
+                            )
+                            sendEvent('success', {
+                                message: `Double-clicked "${match.text}" at screen (${sx}, ${sy})`,
+                                matchedText: match.text,
+                                matchedBbox: match.bbox,
+                            })
+                        } else {
+                            await withTimeout(
+                                clickAt(sx, sy, clickBtn),
+                                STEP_ACTION_TIMEOUT,
+                                `Click "${match.text}" at (${sx}, ${sy})`,
+                            )
+                            sendEvent('success', {
+                                message: `${clickBtn === 'right' ? 'Right-clicked' : 'Clicked'} "${match.text}" at screen (${sx}, ${sy})`,
+                                matchedText: match.text,
+                                matchedBbox: match.bbox,
+                            })
+                        }
                     }
                     break
                 }
@@ -401,6 +544,7 @@ async function runWorkflow(
                         step.timeoutMs || 10000,
                         0,
                         false,
+                        step.useRegex ?? false,
                         i,
                         workflow.name,
                         runId,
@@ -448,6 +592,7 @@ async function runWorkflow(
                         step.timeoutMs || 5000,
                         0,
                         step.wholeWord ?? false,
+                        step.useRegex ?? false,
                         i,
                         workflow.name,
                         runId,
@@ -569,7 +714,7 @@ async function runWorkflow(
                             lang: config.ocrLang || 'en-US',
                             scale: config.ocrScale || 1,
                         })
-                        const matched = matchBlocks(ocr.blocks, step.when, false)
+                        const matched = matchBlocks(ocr.blocks, step.when, false, step.useRegex)
                         const count = matched.length
                         workflowVars.set(String(step.varName ?? ''), String(count))
                         sendEvent('success', {
@@ -599,7 +744,12 @@ async function runWorkflow(
                             lang: config.ocrLang || 'en-US',
                             scale: config.ocrScale || 1,
                         })
-                        const matched = matchBlocks(ocr.blocks, step.when, step.wholeWord ?? false)
+                        const matched = matchBlocks(
+                            ocr.blocks,
+                            step.when,
+                            step.wholeWord ?? false,
+                            step.useRegex,
+                        )
                         if (matched.length === 0) {
                             sendEvent('error', {
                                 message: `No match for "${step.when}"`,
@@ -645,9 +795,210 @@ async function runWorkflow(
                     }
                     break
                 }
+
+                case 'pressKey': {
+                    const keyVal = getNutKey(step.key || 'Enter')
+                    const mods = (step.modifiers || []).map(getNutKey).filter(Boolean)
+                    if (config.useScrcpy) {
+                        const adb = getAdbExe(config)
+                        const adbKeycodeMap: Record<string, number> = {
+                            Enter: 66,
+                            Escape: 111,
+                            Backspace: 67,
+                            Tab: 61,
+                            Space: 62,
+                            ArrowUp: 19,
+                            ArrowDown: 20,
+                            ArrowLeft: 21,
+                            ArrowRight: 22,
+                        }
+                        const code = adbKeycodeMap[step.key || 'Enter'] || 66
+                        await new Promise<void>((resolve, reject) => {
+                            exec(
+                                `"${adb}" shell input keyevent ${code}`,
+                                { timeout: 5000 },
+                                (err) => {
+                                    if (err)
+                                        reject(new Error(`adb keyevent failed: ${err.message}`))
+                                    else resolve()
+                                },
+                            )
+                        })
+                        sendEvent('success', { message: `Pressed key code ${code} via ADB` })
+                    } else {
+                        if (mods.length > 0) await pressKey(...mods)
+                        if (keyVal) {
+                            await pressKey(keyVal)
+                            await releaseKey(keyVal)
+                        }
+                        if (mods.length > 0) await releaseKey(...mods)
+                        const msg = `Pressed key: ${step.modifiers && step.modifiers.length ? step.modifiers.join('+') + '+' : ''}${step.key || 'Enter'}`
+                        sendEvent('success', { message: msg })
+                    }
+                    break
+                }
+
+                case 'captureImage': {
+                    const wins = findWindowsByTitle(config.targetWindowTitle)
+                    if (wins.length === 0) {
+                        sendEvent('error', { message: 'Target window not found' })
+                        break
+                    }
+                    const capture = await captureWindow(wins[0].id)
+                    let folder = step.folderPath
+                        ? resolveTemplate(step.folderPath, workflowVars)
+                        : ''
+                    if (!folder) {
+                        folder = app.getPath('downloads')
+                    }
+                    if (!fs.existsSync(folder)) {
+                        fs.mkdirSync(folder, { recursive: true })
+                    }
+                    let fileName = step.fileName
+                        ? resolveTemplate(step.fileName, workflowVars)
+                        : 'screenshot_${timestamp}'
+                    fileName = fileName.replace(/\$\{timestamp\}/g, String(Date.now()))
+                    if (!fileName.endsWith('.png')) fileName += '.png'
+                    const fullPath = path.join(folder, fileName)
+                    fs.writeFileSync(fullPath, capture.image)
+                    sendEvent('success', { message: `Saved screenshot to ${fullPath}` })
+                    break
+                }
+
+                case 'hoverXY': {
+                    if (config.useScrcpy) {
+                        sendEvent('success', { message: 'Hover ignored in ADB/scrcpy mode' })
+                    } else {
+                        const sx = Math.round(step.x / dpiScale) + (windowPos?.x ?? 0)
+                        const sy = Math.round(step.y / dpiScale) + (windowPos?.y ?? 0)
+                        await withTimeout(
+                            moveMouse(sx, sy),
+                            STEP_ACTION_TIMEOUT,
+                            `Hover at (${sx}, ${sy})`,
+                        )
+                        sendEvent('success', { message: `Hovered mouse at screen (${sx}, ${sy})` })
+                    }
+                    break
+                }
+
+                case 'hoverText': {
+                    if (config.useScrcpy) {
+                        sendEvent('success', { message: 'Hover ignored in ADB/scrcpy mode' })
+                        break
+                    }
+                    if (!step.when) {
+                        sendEvent('error', { message: 'No text pattern specified' })
+                        break
+                    }
+                    const match = await waitForText(
+                        config,
+                        step.when,
+                        step.timeoutMs || 5000,
+                        step.matchIndex ?? 0,
+                        step.wholeWord ?? false,
+                        step.useRegex ?? false,
+                        i,
+                        workflow.name,
+                        runId,
+                    )
+                    if (workflowAbort) break
+                    if (!match) {
+                        sendEvent('error', {
+                            message: `Text "${step.when}" not found within timeout`,
+                        })
+                        break
+                    }
+                    const sx = Math.round(match.cx / dpiScale) + match.windowX
+                    const sy = Math.round(match.cy / dpiScale) + match.windowY
+                    await withTimeout(
+                        moveMouse(sx, sy),
+                        STEP_ACTION_TIMEOUT,
+                        `Hover "${match.text}" at (${sx}, ${sy})`,
+                    )
+                    sendEvent('success', {
+                        message: `Hovered mouse on "${match.text}" at (${sx}, ${sy})`,
+                        matchedText: match.text,
+                        matchedBbox: match.bbox,
+                    })
+                    break
+                }
+
+                case 'mathVar': {
+                    const resultVal = evaluateMathExpression(step.expression || '', workflowVars)
+                    const sv = String(resultVal)
+                    workflowVars.set(String(step.varName ?? ''), sv)
+                    if (step.persist) {
+                        const pv = loadPersistentVars()
+                        pv.set(String(step.varName ?? ''), sv)
+                        savePersistentVars(pv)
+                    }
+                    sendEvent('success', {
+                        message: `Math evaluation: "${step.varName}" = ${step.expression} => "${sv}"`,
+                    })
+                    break
+                }
+
+                case 'repeat': {
+                    const count = step.repeatCount || 5
+                    const currentCount = repeatCounters.get(step.id) || 0
+                    if (currentCount < count) {
+                        repeatCounters.set(step.id, currentCount + 1)
+                        const targetIdx = (step.targetStep ?? 1) - 1
+                        if (targetIdx >= 0 && targetIdx < workflow.steps.length) {
+                            i = targetIdx - 1
+                            sendEvent('success', {
+                                message: `Repeat loop iteration ${currentCount + 1}/${count}, jumping back to step ${targetIdx + 1}`,
+                            })
+                        } else {
+                            sendEvent('error', {
+                                message: `Invalid repeat target step ${step.targetStep}`,
+                            })
+                        }
+                    } else {
+                        repeatCounters.set(step.id, 0)
+                        sendEvent('success', {
+                            message: `Completed all ${count} repeat iterations`,
+                        })
+                    }
+                    break
+                }
             }
         } catch (err) {
-            sendEvent('error', { message: err instanceof Error ? err.message : String(err) })
+            const errMsg = err instanceof Error ? err.message : String(err)
+            const action = step.onError || 'stop'
+            if (action === 'ignore') {
+                sendEvent('success', { message: `Ignored step error: ${errMsg}` })
+            } else if (action === 'goto') {
+                const targetIdx = (step.onErrorStep ?? 1) - 1
+                if (targetIdx >= 0 && targetIdx < workflow.steps.length) {
+                    sendEvent('success', {
+                        message: `Step error: ${errMsg}. Recovering by jumping to step ${targetIdx + 1}`,
+                    })
+                    i = targetIdx - 1
+                } else {
+                    sendEvent('error', {
+                        message: `Step error: ${errMsg}. Failed recovery jump to invalid step ${step.onErrorStep || '?'}`,
+                    })
+                    send('workflow:done', {
+                        workflowName: workflow.name,
+                        status: 'error',
+                        completedSteps: i,
+                        totalSteps: workflow.steps.length,
+                        error: errMsg,
+                    } satisfies WorkflowResult)
+                    return
+                }
+            } else {
+                sendEvent('error', { message: `Step failed: ${errMsg}` })
+                send('workflow:done', {
+                    workflowName: workflow.name,
+                    status: 'error',
+                    completedSteps: i,
+                    totalSteps: workflow.steps.length,
+                    error: errMsg,
+                } satisfies WorkflowResult)
+                return
+            }
         }
     }
 
@@ -772,6 +1123,7 @@ async function findTextOnScreen(
     pattern: string,
     matchIndex: number = 0,
     wholeWord: boolean = false,
+    useRegex: boolean = false,
 ): Promise<{
     text: string
     bbox: { x0: number; y0: number; x1: number; y1: number }
@@ -791,7 +1143,7 @@ async function findTextOnScreen(
         scale: config.ocrScale || 1,
     })
 
-    const matched = matchBlocks(ocr.blocks, pattern, wholeWord)
+    const matched = matchBlocks(ocr.blocks, pattern, wholeWord, useRegex)
     if (matched.length === 0) return null
 
     let idx = matchIndex
@@ -814,7 +1166,20 @@ async function findTextOnScreen(
     }
 }
 
-function matchBlocks(blocks: any[], pattern: string, wholeWord: boolean): any[] {
+function matchBlocks(
+    blocks: any[],
+    pattern: string,
+    wholeWord: boolean,
+    useRegex?: boolean,
+): any[] {
+    if (useRegex) {
+        try {
+            const re = new RegExp(pattern, 'i')
+            return blocks.filter((b: any) => re.test(b.text))
+        } catch {
+            return []
+        }
+    }
     if (wholeWord) {
         const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const re = new RegExp(`\\b${escaped}\\b`, 'i')
@@ -830,6 +1195,7 @@ async function waitForText(
     timeoutMs: number,
     matchIndex: number = 0,
     wholeWord: boolean = false,
+    useRegex: boolean = false,
     progressStepIndex?: number,
     progressWorkflowName?: string,
     runId?: number,
@@ -860,7 +1226,7 @@ async function waitForText(
         }
         try {
             const result = await withTimeout(
-                findTextOnScreen(config, pattern, matchIndex, wholeWord),
+                findTextOnScreen(config, pattern, matchIndex, wholeWord, useRegex),
                 10000,
                 `OCR capture for "${pattern}"`,
             )

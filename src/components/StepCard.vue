@@ -30,15 +30,22 @@
                     >
                         <option value="clickXY">Click XY</option>
                         <option value="clickText">Click Text</option>
+                        <option value="hoverXY">Hover XY</option>
+                        <option value="hoverText">Hover Text</option>
                         <option value="waitText">Wait for Text</option>
                         <option value="wait">Wait (Delay)</option>
                         <option value="goto">Go to Step</option>
                         <option value="condition">Condition</option>
+                        <option value="repeat">Repeat Loop</option>
                         <option value="setVar">Set Variable</option>
+                        <option value="mathVar">Math Variable</option>
                         <option value="checkVar">Check Variable</option>
                         <option value="swipe">Swipe / Drag</option>
                         <option value="countText">Count Text</option>
                         <option value="captureLine">Capture Line</option>
+                        <option value="pressKey">Press Key / Hotkey</option>
+                        <option value="captureImage">Save Screenshot</option>
+                        <option value="callWorkflow">Call Sub-Workflow</option>
                     </select>
                 </div>
                 <input

@@ -2,6 +2,7 @@
     import { ref, watch } from 'vue'
 
     const props = defineProps<{ lines: Array<{ time: string; level: string; msg: string }> }>()
+    defineEmits<{ clear: [] }>()
     const listRef = ref<HTMLDivElement | null>(null)
 
     watch(
@@ -21,6 +22,22 @@
         if (l === 'warn') return 'warn'
         return 'info'
     }
+
+    function exportLogs() {
+        if (props.lines.length === 0) return
+        const text = props.lines
+            .map((l) => `[${l.time}] [${l.level.toUpperCase()}] ${l.msg}`)
+            .join('\n')
+        const blob = new Blob([text], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `auto-pocket-logs-${Date.now()}.txt`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+    }
 </script>
 
 <template>
@@ -32,9 +49,16 @@
                 <span class="control-dot maximize"></span>
             </div>
             <span class="terminal-title">Developer Console</span>
-            <button v-if="lines.length > 0" class="clear-btn" @click="$emit('clear' as any)">
-                Clear
-            </button>
+            <div class="log-actions" v-if="lines.length > 0">
+                <button class="clear-btn" @click="$emit('clear')">Clear</button>
+                <button
+                    class="clear-btn export-btn"
+                    @click="exportLogs"
+                    title="Export logs to file"
+                >
+                    📥 Export
+                </button>
+            </div>
         </div>
         <div ref="listRef" class="log-list">
             <div v-for="(line, i) in lines" :key="i" :class="['log-line', levelClass(line.level)]">
@@ -122,6 +146,20 @@
 
     .clear-btn:hover {
         color: var(--text-secondary);
+    }
+
+    .log-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .export-btn {
+        color: var(--accent, #6366f1);
+    }
+
+    .export-btn:hover {
+        color: #818cf8;
     }
 
     .log-list {

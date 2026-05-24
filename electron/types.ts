@@ -16,6 +16,7 @@ export interface SavedRule {
     when: string
     action: string
     actionText?: string
+    useRegex?: boolean
 }
 
 export interface WatcherMatchEvent {
@@ -37,12 +38,16 @@ export interface WorkflowStepBase {
     id: string
     name: string
     waitBeforeMs: number
+    onError?: 'stop' | 'ignore' | 'goto'
+    onErrorStepId?: string
+    onErrorStep?: number
 }
 
 export interface WorkflowStepClickXY extends WorkflowStepBase {
     type: 'clickXY'
     x: number
     y: number
+    clickType?: 'left' | 'right' | 'middle' | 'double'
 }
 
 export interface WorkflowStepClickText extends WorkflowStepBase {
@@ -51,12 +56,15 @@ export interface WorkflowStepClickText extends WorkflowStepBase {
     timeoutMs: number
     matchIndex: number
     wholeWord?: boolean
+    clickType?: 'left' | 'right' | 'middle' | 'double'
+    useRegex?: boolean
 }
 
 export interface WorkflowStepWaitText extends WorkflowStepBase {
     type: 'waitText'
     when: string
     timeoutMs: number
+    useRegex?: boolean
 }
 
 export interface WorkflowStepWait extends WorkflowStepBase {
@@ -67,6 +75,7 @@ export interface WorkflowStepWait extends WorkflowStepBase {
 export interface WorkflowStepGoto extends WorkflowStepBase {
     type: 'goto'
     targetStep: number
+    targetStepId?: string
 }
 
 export interface WorkflowStepCondition extends WorkflowStepBase {
@@ -76,6 +85,9 @@ export interface WorkflowStepCondition extends WorkflowStepBase {
     elseStep: number
     timeoutMs: number
     wholeWord?: boolean
+    useRegex?: boolean
+    thenStepId?: string
+    elseStepId?: string
 }
 
 export interface WorkflowStepSetVar extends WorkflowStepBase {
@@ -91,6 +103,8 @@ export interface WorkflowStepCheckVar extends WorkflowStepBase {
     varValue: string
     thenStep: number
     elseStep: number
+    thenStepId?: string
+    elseStepId?: string
 }
 
 export interface WorkflowStepSwipe extends WorkflowStepBase {
@@ -107,6 +121,7 @@ export interface WorkflowStepCountText extends WorkflowStepBase {
     when: string
     varName: string
     timeoutMs: number
+    useRegex?: boolean
 }
 
 export interface WorkflowStepCaptureLine extends WorkflowStepBase {
@@ -117,11 +132,53 @@ export interface WorkflowStepCaptureLine extends WorkflowStepBase {
     timeoutMs: number
     persist?: boolean
     wholeWord?: boolean
+    useRegex?: boolean
 }
 
 export interface WorkflowStepCallWorkflow extends WorkflowStepBase {
     type: 'callWorkflow'
     targetWorkflow: string
+}
+
+export interface WorkflowStepPressKey extends WorkflowStepBase {
+    type: 'pressKey'
+    key: string
+    modifiers?: string[]
+}
+
+export interface WorkflowStepCaptureImage extends WorkflowStepBase {
+    type: 'captureImage'
+    folderPath?: string
+    fileName?: string
+}
+
+export interface WorkflowStepHoverXY extends WorkflowStepBase {
+    type: 'hoverXY'
+    x: number
+    y: number
+}
+
+export interface WorkflowStepHoverText extends WorkflowStepBase {
+    type: 'hoverText'
+    when: string
+    timeoutMs: number
+    matchIndex: number
+    wholeWord?: boolean
+    useRegex?: boolean
+}
+
+export interface WorkflowStepMathVar extends WorkflowStepBase {
+    type: 'mathVar'
+    varName: string
+    expression: string
+    persist?: boolean
+}
+
+export interface WorkflowStepRepeat extends WorkflowStepBase {
+    type: 'repeat'
+    targetStepId?: string
+    targetStep?: number
+    repeatCount: number
 }
 
 export type WorkflowStep =
@@ -137,6 +194,12 @@ export type WorkflowStep =
     | WorkflowStepCountText
     | WorkflowStepCaptureLine
     | WorkflowStepCallWorkflow
+    | WorkflowStepPressKey
+    | WorkflowStepCaptureImage
+    | WorkflowStepHoverXY
+    | WorkflowStepHoverText
+    | WorkflowStepMathVar
+    | WorkflowStepRepeat
 
 export interface WorkflowStepEvent {
     workflowName: string
