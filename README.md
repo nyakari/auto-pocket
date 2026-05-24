@@ -2,7 +2,7 @@
 
 Disclaimer: This is just vibe coded slop because I didn't care about the code quality.
 
-My current use case for this is automate all TCGP solo battles for every expansion and complete all of them. Didn't feel like manually clicking buttons for several hours...
+My current use case for this is to automate all TCGP solo battles for every expansion and complete all of them. Didn't feel like manually clicking buttons for several hours...
 
 Can be adapted to basically control anything though
 
