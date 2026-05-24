@@ -226,7 +226,6 @@
         windows: any[]
         selectedHandle: number | null
         useScrcpy: boolean
-        adbPath: string
         logLines: Array<{ time: string; level: string; msg: string }>
     }>()
 
@@ -340,14 +339,9 @@
         return ''
     })
 
-    async function browseAdb() {
-        const result = await window.api.selectAdb()
-        if (result) adbPath.value = result
-    }
-
     async function detectResolution() {
         try {
-            const res = await window.api.getDeviceResolution(props.adbPath)
+            const res = await window.api.getDeviceResolution()
             if (res.width && res.height) {
                 deviceResolution.value = res
                 emit('log', 'info', `Device resolution: ${res.width}x${res.height}`)
@@ -698,7 +692,6 @@
         const config = await window.api.loadConfig()
         config.targetWindowTitle = config.targetWindowTitle || (screenshotWindow.value?.title ?? '')
         config.useScrcpy = props.useScrcpy
-        config.adbPath = props.adbPath
         config.deviceResolution = deviceResolution.value
 
         const dw = deviceResolution.value.width

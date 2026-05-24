@@ -1,6 +1,6 @@
 {
     "name": "auto-pocket",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": "OCR-based window automation library",
     "keywords": [
         "automation",
@@ -24,7 +24,8 @@
         "build:app": "npm run build && npm run build:renderer && npx electron-builder --win portable",
         "example": "npx tsx examples/rules.ts",
         "watch": "tsc --watch",
-        "prepare": "npx vp config"
+        "download-adb": "node scripts/setup-adb.mjs",
+        "prepare": "npx vp config && npm run download-adb"
     },
     "dependencies": {
         "@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
@@ -56,6 +57,10 @@
     },
     "build": {
         "appId": "com.autopocket.app",
+        "asar": true,
+        "asarUnpack": [
+            "**/node_modules/node-windows-ocr/**/*"
+        ],
         "productName": "Auto Pocket",
         "icon": "build/icon.ico",
         "extraMetadata": {
@@ -66,6 +71,17 @@
             "dist-electron/**/*",
             "src/dist/**/*",
             "node_modules/**/*"
+        ],
+        "extraResources": [
+            {
+                "from": "bin",
+                "to": "bin",
+                "filter": [
+                    "adb.exe",
+                    "AdbWinApi.dll",
+                    "AdbWinUsbApi.dll"
+                ]
+            }
         ],
         "directories": {
             "output": "release"

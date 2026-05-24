@@ -56,9 +56,7 @@ contextBridge.exposeInMainWorld('api', {
         return () => ipcRenderer.removeListener('workflow:progress', handler)
     },
 
-    getDeviceResolution: (adbPath?: string) => ipcRenderer.invoke('get-device-resolution', adbPath),
-
-    selectAdb: () => ipcRenderer.invoke('select-adb'),
+    getDeviceResolution: () => ipcRenderer.invoke('get-device-resolution'),
 
     onWindowMaximized: (cb: (maximized: boolean) => void) => {
         const handler = (_e: any, val: boolean) => cb(val)

@@ -141,7 +141,6 @@
                     :windows="windows"
                     v-model:selected-handle="selectedHandle"
                     :use-scrcpy="useScrcpy"
-                    :adb-path="adbPath"
                     :log-lines="logLines"
                     @clear-logs="logLines = []"
                     @refresh-windows="refreshWindows"
@@ -205,16 +204,6 @@
                         </div>
                     </section>
 
-                    <section v-if="useScrcpy" class="form-group">
-                        <label>ADB Command Path</label>
-                        <div class="adb-row">
-                            <input v-model="adbPath" placeholder="e.g. adb" class="custom-input" />
-                            <button class="btn btn-secondary btn-small" @click="browseAdb">
-                                Browse
-                            </button>
-                        </div>
-                    </section>
-
                     <section class="form-group">
                         <label>Watcher Poll Interval (ms)</label>
                         <input
@@ -254,7 +243,6 @@
     const ocrLang = ref('en-US')
     const defaultWaitMs = ref(0.5)
     const useScrcpy = ref(false)
-    const adbPath = ref('adb')
     const isMaximized = ref(false)
 
     watch(selectedHandle, async (val) => {
@@ -289,11 +277,6 @@
         }
     }
 
-    async function browseAdb() {
-        const result = await window.api.selectAdb()
-        if (result) adbPath.value = result
-    }
-
     async function saveSettings() {
         try {
             const existing = await window.api.loadConfig()
@@ -306,7 +289,6 @@
                 ocrLang: ocrLang.value,
                 defaultWaitMs: defaultWaitMs.value * 1000, // Convert to ms
                 useScrcpy: useScrcpy.value,
-                adbPath: adbPath.value,
             }
 
             await window.api.saveConfig(newConfig)
@@ -346,7 +328,6 @@
         defaultWaitMs.value =
             config.defaultWaitMs > 60 ? config.defaultWaitMs / 1000 : config.defaultWaitMs || 0.5
         useScrcpy.value = config.useScrcpy ?? false
-        adbPath.value = config.adbPath || 'adb'
 
         window.api.onWatcherStatus((s) => {
             watcherRunning.value = s.running

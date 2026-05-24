@@ -30,7 +30,19 @@ export async function ocrImage(image: Buffer, options?: OcrOptions): Promise<Ocr
     await writeFile(tmpFile, image)
 
     try {
-        const [raw] = await recognizeBatchFromPath([tmpFile], { language: lang })
+        let moduleRoot: string | undefined = undefined
+        const currentDir = __dirname
+        const asarIdx = currentDir.toLowerCase().indexOf('app.asar')
+        if (asarIdx !== -1) {
+            const appAsarPath = currentDir.substring(0, asarIdx + 8)
+            const unpackedPath = appAsarPath.replace(/app\.asar/i, 'app.asar.unpacked')
+            moduleRoot = join(unpackedPath, 'node_modules', 'node-windows-ocr')
+        }
+
+        const [raw] = await recognizeBatchFromPath([tmpFile], {
+            language: lang,
+            moduleRoot,
+        })
 
         const lines: LineBlock[] = []
         const blocks: WordBlock[] = []

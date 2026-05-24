@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
@@ -391,7 +391,7 @@ async function runWorkflow(
         try {
             switch (step.type) {
                 case 'clickXY': {
-                    const adb = getAdbExe(config)
+                    const adb = getAdbExe()
                     if (config.useScrcpy) {
                         if (step.clickType === 'double') {
                             await adbTap(adb, step.x, step.y)
@@ -486,7 +486,7 @@ async function runWorkflow(
                     }
                     let tx = match.cx
                     let ty = match.cy
-                    const adb = getAdbExe(config)
+                    const adb = getAdbExe()
                     if (config.useScrcpy) {
                         const dw = config.deviceResolution.width
                         const dh = config.deviceResolution.height
@@ -689,7 +689,7 @@ async function runWorkflow(
                 }
 
                 case 'swipe': {
-                    const adb = getAdbExe(config)
+                    const adb = getAdbExe()
                     const durMs = Math.round((step.duration || 0.3) * 1000)
                     if (config.useScrcpy) {
                         await adbSwipe(adb, step.x1, step.y1, step.x2, step.y2, durMs)
@@ -813,7 +813,7 @@ async function runWorkflow(
                     const keyVal = getNutKey(step.key || 'Enter')
                     const mods = (step.modifiers || []).map(getNutKey).filter(Boolean)
                     if (config.useScrcpy) {
-                        const adb = getAdbExe(config)
+                        const adb = getAdbExe()
                         const adbKeycodeMap: Record<string, number> = {
                             Enter: 66,
                             Escape: 111,
@@ -1085,8 +1085,14 @@ function sleepWithProgress(
     })
 }
 
-function getAdbExe(config: SavedConfig): string {
-    return config.adbPath || 'adb'
+function getAdbExe(): string {
+    const bundledPath = isDev
+        ? path.join(app.getAppPath(), 'bin', 'adb.exe')
+        : path.join(process.resourcesPath, 'bin', 'adb.exe')
+    if (fs.existsSync(bundledPath)) {
+        return bundledPath
+    }
+    return 'adb'
 }
 
 function resolveTemplate(value: string, vars: Map<string, string>): string {
@@ -1326,9 +1332,7 @@ void app.whenReady().then(() => {
         savePersistentVars(new Map())
     })
 
-    ipcMain.handle('get-device-resolution', async (_e, adbExe?: string) =>
-        getDeviceResolution(adbExe || 'adb'),
-    )
+    ipcMain.handle('get-device-resolution', async () => getDeviceResolution(getAdbExe()))
 
     ipcMain.handle('resize-window', async (_e, handle: number, width: number, height: number) => {
         const psCommand = `
@@ -1392,15 +1396,6 @@ $logicalOuterH = [Math]::Round((${height} / $scale) + $padH_logical)
         } catch (e: any) {
             console.error(`[window] Failed to resize window: ${e.message}`)
         }
-    })
-
-    ipcMain.handle('select-adb', async () => {
-        const result = await dialog.showOpenDialog({
-            title: 'Select ADB Executable',
-            filters: [{ name: 'Executable', extensions: ['exe', 'bat', 'cmd', ''] }],
-            properties: ['openFile'],
-        })
-        return result.canceled ? null : result.filePaths[0]
     })
 
     ipcMain.handle('minimize-window', () => {

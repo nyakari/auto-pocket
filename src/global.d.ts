@@ -28,8 +28,7 @@ interface Api {
     onWorkflowStep: (cb: (data: any) => void) => () => void
     onWorkflowDone: (cb: (data: any) => void) => () => void
     onWorkflowProgress: (cb: (data: any) => void) => () => void
-    getDeviceResolution: (adbPath?: string) => Promise<{ width: number; height: number }>
-    selectAdb: () => Promise<string | null>
+    getDeviceResolution: () => Promise<{ width: number; height: number }>
     onWindowMaximized: (cb: (maximized: boolean) => void) => () => void
     clearPersistentVars: () => Promise<void>
     resizeWindow: (handle: number, width: number, height: number) => Promise<void>
